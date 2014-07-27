@@ -67,8 +67,8 @@ void b_add (b_tree_t *tree, b_key_t key) {
 
 
 bool b_find (b_tree_t *tree, b_key_t key) {
-  static b_node_t **n;
-  static int i;
+  b_node_t **n;
+  int i;
   
   n = b_find_node(tree, key);
   if (*n == NULL)
@@ -97,7 +97,7 @@ void b_delete (b_tree_t *tree) {
  **/
 static b_node_t ** b_find_node (b_tree_t *tree, b_key_t key) {
   b_node_t **n;
-  static int i;
+  int i;
   
   assert(tree != NULL);
   
@@ -124,7 +124,7 @@ static b_node_t ** b_find_node (b_tree_t *tree, b_key_t key) {
 
 static b_node_t * b_node_new () {
   b_node_t *node;
-  static int i;
+  int i;
   
   node = (b_node_t *) malloc(sizeof(b_node_t));
   node->used_keys = 0;
@@ -151,7 +151,7 @@ static b_node_t * b_node_new () {
 static int b_node_index (b_node_t *node, b_key_t key) {
 
 #ifdef B_LINEAR_SEARCH
-  static int i;
+  int i;
   
   if (node->used_keys == 0 || key < node->keys[0])
     return -1;
@@ -160,7 +160,7 @@ static int b_node_index (b_node_t *node, b_key_t key) {
   
   return i;
 #else
-  static int l, u, p;
+  int l, u, p;
   
   if (node->used_keys == 0 || key < node->keys[0])
     return -1;
@@ -186,7 +186,7 @@ static int b_node_index (b_node_t *node, b_key_t key) {
 
 
 static void b_node_delete (b_node_t *node) {
-  static int i;
+  int i;
   
   for (i = 0; i < B_MAX_KEYS + 1; i++) {
     if (node->childs[i] != NULL) {
