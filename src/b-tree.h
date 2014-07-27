@@ -4,6 +4,9 @@
 #define __B_TREE_H__
 
 
+#include <stdbool.h>
+
+
 #ifndef B_MAX_KEYS
 # define B_MAX_KEYS 3
 #endif
@@ -17,7 +20,6 @@ struct b_node_s {
   b_key_t       keys[B_MAX_KEYS];
   int           used_keys;
   b_node_t     *childs[B_MAX_KEYS + 1];
-  void         *value;
 };
 
 struct b_tree_s {
@@ -25,11 +27,10 @@ struct b_tree_s {
 };
 
 
-b_tree_t *  b_new     ();
-void        b_add_key (b_tree_t *tree, b_key_t key);
-void        b_add     (b_tree_t *tree, b_key_t key, void *val);
-b_node_t ** b_find    (b_tree_t *tree, b_key_t key);
-void        b_delete  (b_tree_t *tree);
+b_tree_t * b_new     ();
+void       b_add     (b_tree_t *tree, b_key_t key);
+bool       b_find    (b_tree_t *tree, b_key_t key);
+void       b_delete  (b_tree_t *tree);
 
 
 /**
