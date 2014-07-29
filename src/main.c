@@ -4,13 +4,35 @@
 #include "b-tree.h"
 
 
-void print_node (b_node_t *node) {
-  int i;
+void print_node (b_node_t *node, int t) {
+  int i, j;
+  char tab[256];
   
-  printf("%p\n", (void *) node);
-  for (i = 0; i < node->used_keys; i++) {
-    printf("  node->keys[%d] = %d\n", i, node->keys[i]);
-    printf("  node->childs[%d] = %p\n", i, (void *) node->childs[i]);
+  for (j = 0; j < t; j++) {
+    tab[j] = ' ';
+  }
+  tab[t] = 0;
+  if (node != NULL) {
+    printf("%s{", tab);
+    if (node->childs[0] == NULL) {
+      printf("}\n");
+    } else {
+      printf("\n");
+      print_node(node->childs[0], t+2);
+      printf("%s}\n", tab);
+    }
+    for (i = 0; i < node->used_keys; i++) {
+      printf("%s'%d' [%d]\n%s{", tab, node->keys[i], node->used_keys, tab);
+      if (node->childs[i] == NULL) {
+        printf("}\n");
+      } else {
+        printf("\n");
+        print_node(node->childs[i+1], t+2);
+        printf("%s}\n", tab);
+      }
+    }
+  } else {
+    printf("%snil\n", tab);
   }
 }
 
@@ -18,19 +40,15 @@ void print_node (b_node_t *node) {
 int main () {
   
   b_tree_t *tree;
+  int i;
   
   tree = b_new();
   
-  b_add(tree, 3);
-  b_add(tree, 6);
-  b_add(tree, 9);
+  for (i = 1; i <= 7; i++) {
+    b_add(tree, i);
+  }
   
-  assert(b_find(tree, 3));
-  assert(b_find(tree, 6));
-  assert(b_find(tree, 9));
-  assert(!b_find(tree, 5));
-  
-  print_node(tree->root);
+  print_node(tree->root, 0);
   
   b_delete(tree);
   

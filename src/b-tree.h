@@ -8,7 +8,7 @@
 
 
 #ifndef B_MAX_KEYS
-# define B_MAX_KEYS 3
+# define B_MAX_KEYS 2
 #endif
 
 
@@ -20,6 +20,7 @@ struct b_node_s {
   b_key_t       keys[B_MAX_KEYS];
   int           used_keys;
   b_node_t     *childs[B_MAX_KEYS + 1];
+  b_node_t     *parent;
 };
 
 struct b_tree_s {

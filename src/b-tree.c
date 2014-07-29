@@ -2,11 +2,10 @@
 #include "b-tree.h"
 
 #ifdef B_DEBUG
-#include <stdio.h>
+# include <stdio.h>
 #endif
 
 #include <stdlib.h>
-#include <string.h>
 #include <assert.h>
 
 
@@ -15,11 +14,14 @@
  * ========================================================================== */
 
 
-static b_node_t ** b_find_node   (b_tree_t *tree, b_key_t key);
+static b_node_t *  b_node_new     ();
+static void        b_node_add     (b_node_t **node, b_key_t key);
+static void        b_node_replace (b_node_t *node, b_key_t key, int i);
+static int         b_node_index   (b_node_t *node, b_key_t key);
+static b_node_t ** b_node_find    (b_tree_t *tree, b_key_t key);
+static void        b_node_delete  (b_node_t *node);
 
-static b_node_t *  b_node_new    ();
-static void        b_node_delete (b_node_t *node);
-static int         b_node_index  (b_node_t *node, b_key_t key);
+static inline void b_swap        (void *a, void *b);
 
 
 /* ==========================================================================
@@ -38,31 +40,16 @@ b_tree_t * b_new () {
 
 
 void b_add (b_tree_t *tree, b_key_t key) {
-  b_node_t **n;
-  int i, j;
+  b_node_t **n, *root;
   
-  n = b_find_node(tree, key);
-  if (*n == NULL) {
-    *n = b_node_new();
-    (*n)->keys[0] = key;
-    (*n)->used_keys++;
-  } else {
-    if ((*n)->used_keys == B_MAX_KEYS) {
-      /* b_split(); */
-    } else {
-      i = b_node_index(*n, key);
-      if (key != (*n)->keys[i]) {
-        /* Tengo que insertar en la posición i + 1. Also, las inserciones
-         * son en las hojas => childs[j] == NULL para todo j. */
-        i++;
-        for (j = (*n)->used_keys; j > i; j--) {
-          (*n)->keys[j] = (*n)->keys[j - 1];
-        }
-        (*n)->keys[i] = key;
-        (*n)->used_keys++;
-      }
-    }
+  n = b_node_find(tree, key);
+  b_node_add(n, key);
+  
+  root = *n;
+  while (root->parent != NULL) {
+    root = root->parent;
   }
+  tree->root = root;
 }
 
 
@@ -70,7 +57,7 @@ bool b_find (b_tree_t *tree, b_key_t key) {
   b_node_t **n;
   int i;
   
-  n = b_find_node(tree, key);
+  n = b_node_find(tree, key);
   if (*n == NULL)
     return false;
   
@@ -91,32 +78,6 @@ void b_delete (b_tree_t *tree) {
 }
 
 
-/**
- * Devuelve un puntero al nodo* donde se encuentra `key`, o donde
- * habría que insertarlo.
- **/
-static b_node_t ** b_find_node (b_tree_t *tree, b_key_t key) {
-  b_node_t **n;
-  int i;
-  
-  assert(tree != NULL);
-  
-  n = (b_node_t **) tree;
-  i = 0;
-  while (*n != NULL && key != (*n)->keys[i]) {
-    i = b_node_index(*n, key);
-    if ((i == -1 || key != (*n)->keys[i]) && (*n)->childs[i + 1] != NULL) {
-      n = &((*n)->childs[i + 1]);
-    } else {
-      /* match concreto o fin de la "recursión". */
-      break;
-    }
-  }
-  
-  return n;
-}
-
-
 /* ==========================================================================
  * FUNCIONES NODOS
  * ========================================================================== */
@@ -131,8 +92,76 @@ static b_node_t * b_node_new () {
   for (i = 0; i < B_MAX_KEYS + 1; i++) {
     node->childs[i] = NULL;
   }
+  node->parent = NULL;
   
   return node;
+}
+
+
+static void b_node_add (b_node_t **node, b_key_t key) {
+  b_node_t *n;
+  int i, j, k;
+  
+  if (*node == NULL) {
+    *node = b_node_new();
+    (*node)->keys[0] = key;
+    (*node)->used_keys++;
+  } else if ((*node)->used_keys < B_MAX_KEYS) {
+    i = b_node_index(*node, key);
+    if (key != (*node)->keys[i]) {
+      /* Tengo que insertar en la posición i + 1. Also, las inserciones
+       * son en las hojas => childs[j] == NULL para todo j. */
+      i++;
+      for (j = (*node)->used_keys; j > i; j--) {
+        (*node)->keys[j] = (*node)->keys[j - 1];
+      }
+      (*node)->keys[i] = key;
+      (*node)->used_keys++;
+    }
+  } else {
+    i = B_MAX_KEYS/2;
+    if (key < (*node)->keys[i])
+      i--;
+    
+    k = (*node)->keys[i];
+    b_node_replace(*node, key, i);
+    
+    n = b_node_new();
+    for (j = 0; j < i; j++) {
+      n->keys[j] = (*node)->keys[j + i];
+      n->childs[j] = (*node)->childs[j + i];
+    }
+    n->used_keys = i;
+    (*node)->used_keys = i;
+    
+    b_node_add(&(*node)->parent, k);
+    n->parent = (*node)->parent;
+    i = b_node_index((*node)->parent, k);
+    (*node)->parent->childs[i] = *node;
+    (*node)->parent->childs[i + 1] = n;
+  }
+}
+
+
+/**
+ * `i` es la posición que quiero reemplazar con `key`
+ **/
+static void b_node_replace (b_node_t *node, b_key_t key, int i) {
+  int j, k;
+  
+  k = node->keys[i];
+  node->keys[i] = key; 
+  if (key < k) {
+    for (j = i; j > 0 && node->keys[j] < node->keys[j - 1]; j--) {
+      b_swap(&node->keys[j], &node->keys[j - 1]);
+      b_swap(node->childs[j], node->childs[j - 1]);
+    }
+  } else {
+    for (j = i + 1; j < B_MAX_KEYS && node->keys[j - 1] > node->keys[j]; j++) {
+      b_swap(&node->keys[j - 1], &node->keys[j]);
+      b_swap(node->childs[j - 1], node->childs[j]);
+    }
+  }
 }
 
 
@@ -151,6 +180,7 @@ static b_node_t * b_node_new () {
 static int b_node_index (b_node_t *node, b_key_t key) {
 
 #ifdef B_LINEAR_SEARCH
+  
   int i;
   
   if (node->used_keys == 0 || key < node->keys[0])
@@ -159,7 +189,9 @@ static int b_node_index (b_node_t *node, b_key_t key) {
   for (i = 0; i < node->used_keys && keys > node->keys[i]; i++);
   
   return i;
+  
 #else
+
   int l, u, p;
   
   if (node->used_keys == 0 || key < node->keys[0])
@@ -180,8 +212,34 @@ static int b_node_index (b_node_t *node, b_key_t key) {
   }
   
   return u;
+  
 #endif
 
+}
+
+
+/**
+ * Devuelve un puntero al nodo* donde se encuentra `key`, o donde
+ * habría que insertarlo.
+ **/
+static b_node_t ** b_node_find (b_tree_t *tree, b_key_t key) {
+  b_node_t **n;
+  int i;
+  
+  assert(tree != NULL);
+  
+  n = (b_node_t **) tree;
+  while (*n != NULL) {
+    i = b_node_index(*n, key);
+    if ((i == -1 || key != (*n)->keys[i]) && (*n)->childs[i + 1] != NULL) {
+      n = &((*n)->childs[i + 1]);
+    } else {
+      /* match concreto ó fin de la "recursión". */
+      break;
+    }
+  }
+  
+  return n;
 }
 
 
@@ -199,4 +257,18 @@ static void b_node_delete (b_node_t *node) {
   
   free(node);
   node = NULL;
+}
+
+
+/* ==========================================================================
+ * FUNCIONES AUXILIARES
+ * ========================================================================== */
+
+
+static inline void b_swap (void *a, void *b) {
+  static void *t;
+  
+  t = a;
+  a = b;
+  b = t;
 }
