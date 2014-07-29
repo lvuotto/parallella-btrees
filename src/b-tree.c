@@ -229,7 +229,7 @@ B_EXPORT b_node_t ** b_node_find (b_tree_t *tree, b_key_t key) {
   
   assert(tree != NULL);
   
-  n = &tree->root;
+  n = (b_node_t **) tree;
   while (*n != NULL) {
     i = b_node_index(*n, key);
     if ((i == -1 || key != (*n)->keys[i]) && (*n)->childs[i + 1] != NULL) {

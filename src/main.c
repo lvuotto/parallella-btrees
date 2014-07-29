@@ -47,8 +47,12 @@ int main () {
   
   for (i = 1; i <= 7; i++) {
     b_add(tree, i);
+    print_node(tree->root, 0);
+    getchar();
   }
-  
+
+  printf("\n---\n\n");
+
   print_node(tree->root, 0);
   
   assert(b_find(tree, 7));
