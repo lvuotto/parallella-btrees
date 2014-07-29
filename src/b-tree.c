@@ -14,14 +14,15 @@
  * ========================================================================== */
 
 
-static b_node_t *  b_node_new     ();
-static void        b_node_add     (b_node_t **node, b_key_t key);
-static void        b_node_replace (b_node_t *node, b_key_t key, int i);
-static int         b_node_index   (b_node_t *node, b_key_t key);
-static b_node_t ** b_node_find    (b_tree_t *tree, b_key_t key);
-static void        b_node_delete  (b_node_t *node);
+/*B_EXPORT b_node_t *  b_node_new     ();
+B_EXPORT void        b_node_add     (b_node_t **node, b_key_t key);
+B_EXPORT void        b_node_replace (b_node_t *node, b_key_t key, int i);
+B_EXPORT int         b_node_index   (b_node_t *node, b_key_t key);
+B_EXPORT b_node_t ** b_node_find    (b_tree_t *tree, b_key_t key);
+B_EXPORT void        b_node_delete  (b_node_t *node);
 
-static inline void b_swap        (void *a, void *b);
+B_EXPORT inline void b_swap_keys    (b_key_t *a, b_ket_t *b);
+B_EXPORT inline void b_swap_childs  (b_node_t **a, b_node_t **b);*/
 
 
 /* ==========================================================================
@@ -83,7 +84,7 @@ void b_delete (b_tree_t *tree) {
  * ========================================================================== */
 
 
-static b_node_t * b_node_new () {
+B_EXPORT b_node_t * b_node_new () {
   b_node_t *node;
   int i;
   
@@ -98,7 +99,7 @@ static b_node_t * b_node_new () {
 }
 
 
-static void b_node_add (b_node_t **node, b_key_t key) {
+B_EXPORT void b_node_add (b_node_t **node, b_key_t key) {
   b_node_t *n;
   int i, j, k;
   
@@ -146,20 +147,20 @@ static void b_node_add (b_node_t **node, b_key_t key) {
 /**
  * `i` es la posición que quiero reemplazar con `key`
  **/
-static void b_node_replace (b_node_t *node, b_key_t key, int i) {
+B_EXPORT void b_node_replace (b_node_t *node, b_key_t key, int i) {
   int j, k;
   
   k = node->keys[i];
   node->keys[i] = key; 
   if (key < k) {
     for (j = i; j > 0 && node->keys[j] < node->keys[j - 1]; j--) {
-      b_swap(&node->keys[j], &node->keys[j - 1]);
-      b_swap(node->childs[j], node->childs[j - 1]);
+      b_swap_keys(&node->keys[j], &node->keys[j - 1]);
+      b_swap_childs(&node->childs[j], &node->childs[j - 1]);
     }
   } else {
     for (j = i + 1; j < B_MAX_KEYS && node->keys[j - 1] > node->keys[j]; j++) {
-      b_swap(&node->keys[j - 1], &node->keys[j]);
-      b_swap(node->childs[j - 1], node->childs[j]);
+      b_swap_keys(&node->keys[j - 1], &node->keys[j]);
+      b_swap_childs(&node->childs[j - 1], &node->childs[j]);
     }
   }
 }
@@ -177,7 +178,7 @@ static void b_node_replace (b_node_t *node, b_key_t key, int i) {
  *  - Fijarse si mejora con una busqueda lineal. O sea, son 16 claves.
  *    El caché debería ser mágico acá.
  **/
-static int b_node_index (b_node_t *node, b_key_t key) {
+B_EXPORT int b_node_index (b_node_t *node, b_key_t key) {
 
 #ifdef B_LINEAR_SEARCH
   
@@ -222,13 +223,13 @@ static int b_node_index (b_node_t *node, b_key_t key) {
  * Devuelve un puntero al nodo* donde se encuentra `key`, o donde
  * habría que insertarlo.
  **/
-static b_node_t ** b_node_find (b_tree_t *tree, b_key_t key) {
+B_EXPORT b_node_t ** b_node_find (b_tree_t *tree, b_key_t key) {
   b_node_t **n;
   int i;
   
   assert(tree != NULL);
   
-  n = (b_node_t **) tree;
+  n = &tree->root;
   while (*n != NULL) {
     i = b_node_index(*n, key);
     if ((i == -1 || key != (*n)->keys[i]) && (*n)->childs[i + 1] != NULL) {
@@ -243,7 +244,7 @@ static b_node_t ** b_node_find (b_tree_t *tree, b_key_t key) {
 }
 
 
-static void b_node_delete (b_node_t *node) {
+B_EXPORT void b_node_delete (b_node_t *node) {
   int i;
   
   for (i = 0; i < B_MAX_KEYS + 1; i++) {
@@ -265,10 +266,18 @@ static void b_node_delete (b_node_t *node) {
  * ========================================================================== */
 
 
-static inline void b_swap (void *a, void *b) {
-  static void *t;
+B_EXPORT inline void b_swap_keys (b_key_t *a, b_key_t *b) {
+  b_key_t t;
   
-  t = a;
-  a = b;
-  b = t;
+  t = *a;
+  *a = *b;
+  *b = t;
+}
+
+B_EXPORT inline void b_swap_childs (b_node_t **a, b_node_t **b) {
+  b_node_t *t;
+  
+  t = *a;
+  *a = *b;
+  *b = t;
 }
