@@ -50,9 +50,7 @@ int main () {
     print_node(tree->root, 0);
     getchar();
   }
-
-  printf("\n---\n\n");
-
+  
   print_node(tree->root, 0);
   
   assert(b_find(tree, 7));
@@ -76,16 +74,33 @@ int main () {
   node->keys[6] = 8;
   node->keys[7] = 9;
   node->used_keys = B_MAX_KEYS;
-
-  b_node_replace(node, 2, 6);
+  node->childs[0] = (b_node_t *) 0x7;
+  node->childs[1] = (b_node_t *) 0x8;
+  node->childs[2] = (b_node_t *) 0x9;
+  node->childs[3] = (b_node_t *) 0xa;
+  node->childs[4] = (b_node_t *) 0xb;
+  node->childs[5] = (b_node_t *) 0xc;
+  node->childs[6] = (b_node_t *) 0xd;
+  node->childs[7] = (b_node_t *) 0xe;
+  node->childs[8] = (b_node_t *) 0xf;
+  
+  printf("[%p]", (void *) node->childs[0]);
   for (i = 0; i < B_MAX_KEYS; i++) {
-    printf("%d, ", node->keys[i]);
+    printf(" %d [%p]", node->keys[i], (void *) node->childs[i + 1]);
+  }
+  printf("\n");
+
+  b_node_replace(node, 0, 6);
+  printf("[%p]", (void *) node->childs[0]);
+  for (i = 0; i < B_MAX_KEYS; i++) {
+    printf(" %d [%p]", node->keys[i], (void *) node->childs[i + 1]);
   }
   printf("\n");
   
-  b_node_replace(node, 10, 1);
+  b_node_replace(node, 8, 1);
+  printf("[%p]", (void *) node->childs[0]);
   for (i = 0; i < B_MAX_KEYS; i++) {
-    printf("%d, ", node->keys[i]);
+    printf(" %d [%p]", node->keys[i], (void *) node->childs[i + 1]);
   }
   printf("\n");*/
   

@@ -14,15 +14,17 @@
  * ========================================================================== */
 
 
-/*B_EXPORT b_node_t *  b_node_new     ();
-B_EXPORT void        b_node_add     (b_node_t **node, b_key_t key);
-B_EXPORT void        b_node_replace (b_node_t *node, b_key_t key, int i);
-B_EXPORT int         b_node_index   (b_node_t *node, b_key_t key);
-B_EXPORT b_node_t ** b_node_find    (b_tree_t *tree, b_key_t key);
-B_EXPORT void        b_node_delete  (b_node_t *node);
+#ifndef B_DEBUG
+static b_node_t *  b_node_new     ();
+static b_node_t *  b_node_add     (b_node_t **node, b_key_t key);
+static void        b_node_replace (b_node_t *node, b_key_t key, int i);
+static int         b_node_index   (b_node_t *node, b_key_t key);
+static b_node_t ** b_node_find    (b_tree_t *tree, b_key_t key);
+static void        b_node_delete  (b_node_t *node);
 
-B_EXPORT inline void b_swap_keys    (b_key_t *a, b_ket_t *b);
-B_EXPORT inline void b_swap_childs  (b_node_t **a, b_node_t **b);*/
+static inline void b_swap_keys    (b_key_t *a, b_ket_t *b);
+static inline void b_swap_childs  (b_node_t **a, b_node_t **b);
+#endif
 
 
 /* ==========================================================================
@@ -99,14 +101,20 @@ B_EXPORT b_node_t * b_node_new () {
 }
 
 
-B_EXPORT void b_node_add (b_node_t **node, b_key_t key) {
-  b_node_t *n;
+/**
+ * Devuelve el nodo en el que se produjo la inserción.
+ * Útil obtener el nuevo padre en el momento en que se
+ * realiza el split.
+ **/
+B_EXPORT b_node_t * b_node_add (b_node_t **node, b_key_t key) {
+  b_node_t *n, *r;
   int i, j, k;
   
   if (*node == NULL) {
     *node = b_node_new();
     (*node)->keys[0] = key;
     (*node)->used_keys++;
+    r = *node;
   } else if ((*node)->used_keys < B_MAX_KEYS) {
     i = b_node_index(*node, key);
     if (key != (*node)->keys[i]) {
@@ -119,6 +127,7 @@ B_EXPORT void b_node_add (b_node_t **node, b_key_t key) {
       (*node)->keys[i] = key;
       (*node)->used_keys++;
     }
+    r = *node;
   } else {
     i = B_MAX_KEYS/2;
     if (key < (*node)->keys[i])
@@ -128,19 +137,22 @@ B_EXPORT void b_node_add (b_node_t **node, b_key_t key) {
     b_node_replace(*node, key, i);
     
     n = b_node_new();
-    for (j = 0; j < i; j++) {
-      n->keys[j] = (*node)->keys[j + i];
-      n->childs[j] = (*node)->childs[j + i];
+    for (j = i; j < B_MAX_KEYS; j++) {
+      n->keys[j - i] = (*node)->keys[j];
+      n->childs[j - i] = (*node)->childs[j];
+      n->used_keys++;
     }
-    n->used_keys = i;
     (*node)->used_keys = i;
     
-    b_node_add(&(*node)->parent, k);
-    n->parent = (*node)->parent;
-    i = b_node_index((*node)->parent, k);
-    (*node)->parent->childs[i] = *node;
-    (*node)->parent->childs[i + 1] = n;
+    n->parent = b_node_add(&(*node)->parent, k);
+    (*node)->parent = n->parent;
+    i = b_node_index(n->parent, k);
+    n->parent->childs[i] = *node;
+    n->parent->childs[i + 1] = n;
+    r = n;
   }
+  
+  return r;
 }
 
 
@@ -151,17 +163,25 @@ B_EXPORT void b_node_replace (b_node_t *node, b_key_t key, int i) {
   int j, k;
   
   k = node->keys[i];
-  node->keys[i] = key; 
+  node->keys[i] = key;
   if (key < k) {
-    for (j = i; j > 0 && node->keys[j] < node->keys[j - 1]; j--) {
-      b_swap_keys(&node->keys[j], &node->keys[j - 1]);
-      b_swap_childs(&node->childs[j], &node->childs[j - 1]);
+    for (j = i - 1; j >= 0 && key < node->keys[j]; j--) {
+      /*b_swap_keys(&node->keys[j], &node->keys[j - 1]);
+      b_swap_childs(&node->childs[j], &node->childs[j - 1]);*/
+      node->keys[j + 1] = node->keys[j];
+      /*node->childs[j + 1] = node->childs[j];*/
     }
+    node->keys[j + 1] = key;
+    /*node->childs[j + 1] = node->childs[j];*/
   } else {
-    for (j = i + 1; j < B_MAX_KEYS && node->keys[j - 1] > node->keys[j]; j++) {
-      b_swap_keys(&node->keys[j - 1], &node->keys[j]);
-      b_swap_childs(&node->childs[j - 1], &node->childs[j]);
+    for (j = i + 1; j < B_MAX_KEYS && key > node->keys[j]; j++) {
+      /*b_swap_keys(&node->keys[j - 1], &node->keys[j]);
+      b_swap_childs(&node->childs[j - 1], &node->childs[j]);*/
+      node->keys[j - 1] = node->keys[j];
+      /*node->childs[j - 1] = node->childs[j];*/
     }
+    node->keys[j - 1] = key;
+    /*node->childs[j - 1] = node->childs[j];*/
   }
 }
 

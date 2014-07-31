@@ -8,7 +8,7 @@
 
 
 #ifndef B_MAX_KEYS
-# define B_MAX_KEYS 2
+# define B_MAX_KEYS 3
 #endif
 
 #ifdef B_DEBUG
@@ -44,7 +44,7 @@ void       b_delete  (b_tree_t *tree);
 #ifdef B_DEBUG
 
 B_EXPORT b_node_t *  b_node_new     ();
-B_EXPORT void        b_node_add     (b_node_t **node, b_key_t key);
+B_EXPORT b_node_t *  b_node_add     (b_node_t **node, b_key_t key);
 B_EXPORT void        b_node_replace (b_node_t *node, b_key_t key, int i);
 B_EXPORT int         b_node_index   (b_node_t *node, b_key_t key);
 B_EXPORT b_node_t ** b_node_find    (b_tree_t *tree, b_key_t key);
