@@ -139,18 +139,16 @@ B_EXPORT b_node_t * b_node_add (b_node_t **node, b_key_t key) {
   } else {
     
     /* Hay que splitear :s */
-    i = B_MAX_KEYS / 2;
-    if (key < (*node)->keys[i])
-      i--;
-    
+    i = b_node_index(*node, key);
     k = (*node)->keys[i];
+    (*node)->keys[i] = key;
     
     n = b_node_new();
     for (j = B_MAX_KEYS / 2; j < B_MAX_KEYS; j++) {
-      n->childs[j - B_MAX_KEYS / 2] = (*node)->keys[j];
+      n->childs[j - B_MAX_KEYS / 2] = (*node)->childs[j];
       n->keys[j - B_MAX_KEYS / 2] = (*node)->keys[j];
     }
-    n->childs[j - B_MAX_KEYS / 2] = (*node)->keys[j];
+    n->childs[j - B_MAX_KEYS / 2] = (*node)->childs[j];
     n->used_keys = B_MAX_KEYS - B_MAX_KEYS / 2;
     (*node)->used_keys = B_MAX_KEYS / 2;
     
@@ -159,8 +157,6 @@ B_EXPORT b_node_t * b_node_add (b_node_t **node, b_key_t key) {
       i = b_node_index(n->parent, k);
       n->parent->childs[i] = *node;
       n->parent->childs[i + 1] = n;
-      
-      fprintf(stderr, "iguales? %d\n", n->parent == (*node)->parent);
     } else {
       
       /**
@@ -176,13 +172,31 @@ B_EXPORT b_node_t * b_node_add (b_node_t **node, b_key_t key) {
        *     => `*node` y `n` tendrán como padre al nodo creado en el llamado
        *     recursivo.
        **/
-      if () {
-      } else if () {
+      
+      if (k <= (*node)->parent->keys[B_MAX_KEYS / 2 - 1]) {
+        /* k < keys[m - 1] */
+        b_node_add(&((*node)->parent), k);
+        n->parent = (*node)->parent;
+        i = b_node_index((*node)->parent, k);
+        n->parent->childs[i] = *node;
+        n->parent->childs[i + 1] = n;
+      } else if (k < (*node)->parent->keys[B_MAX_KEYS / 2]) {
+        /* keys[m - 1] < k < keys[m] */
+        n->parent = b_node_add(&((*node)->parent), k);
+        (*node)->parent->childs[B_MAX_KEYS / 2] = *node;
+        n->parent->childs[0] = n;
       } else {
+        /* keys[m] < k */
+        n->parent = b_node_add(&((*node)->parent), k);
+        (*node)->parent = n->parent;
+        i = b_node_index(n->parent, k);
+        n->parent->childs[i] = *node;
+        n->parent->childs[i + 1] = n;
       }
       
     }
     
+    r = n;
   }
   
   return r;
@@ -305,14 +319,12 @@ B_EXPORT b_node_t ** b_node_find (const b_tree_t *tree, b_key_t key) {
 B_EXPORT void b_node_delete (b_node_t *node) {
   int i;
   
-  assert(node != NULL);
-  
-  for (i = 0; i <= B_MAX_KEYS; i++) {
-    if (node->childs[i] != NULL) {
+  if (node != NULL) {
+    for (i = 0; i <= node->used_keys; i++) {
       b_node_delete(node->childs[i]);
     }
+    
+    free(node);
+    node = NULL;
   }
-  
-  free(node);
-  node = NULL;
 }

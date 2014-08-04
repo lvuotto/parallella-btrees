@@ -6,7 +6,7 @@
 #include "b-tree.h"
 
 
-#define HEAVY_TEST 8
+#define HEAVY_TEST 32
 
 
 void print_node (b_node_t *node, int t) {
@@ -51,7 +51,7 @@ void print_node (b_node_t *node, int t) {
 int main () {
   
   b_tree_t *tree;
-  /*int a[HEAVY_TEST];
+  int a[HEAVY_TEST];
   int i, j, m;
   
   srand(176);
@@ -83,19 +83,6 @@ int main () {
   
   printf("%s\n", m ? "estan todos!" : "fallo :'(");
   
-  b_delete(tree);*/
-  
-  tree = b_new();
-  b_add(tree, 1);
-  b_add(tree, 2);
-  b_add(tree, 3);
-  b_add(tree, 6);
-  b_add(tree, 7);
-  b_add(tree, 5);
-  print_node(tree->root, 0);
-  puts("");
-  b_add(tree, 4);
-  print_node(tree->root, 0);
   b_delete(tree);
   
   return 0;
