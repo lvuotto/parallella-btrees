@@ -139,7 +139,49 @@ B_EXPORT b_node_t * b_node_add (b_node_t **node, b_key_t key) {
   } else {
     
     /* Hay que splitear :s */
-    b_node_split(node, key);
+    i = B_MAX_KEYS / 2;
+    if (key < (*node)->keys[i])
+      i--;
+    
+    k = (*node)->keys[i];
+    
+    n = b_node_new();
+    for (j = B_MAX_KEYS / 2; j < B_MAX_KEYS; j++) {
+      n->childs[j - B_MAX_KEYS / 2] = (*node)->keys[j];
+      n->keys[j - B_MAX_KEYS / 2] = (*node)->keys[j];
+    }
+    n->childs[j - B_MAX_KEYS / 2] = (*node)->keys[j];
+    n->used_keys = B_MAX_KEYS - B_MAX_KEYS / 2;
+    (*node)->used_keys = B_MAX_KEYS / 2;
+    
+    if ((*node)->parent == NULL || (*node)->parent->used_keys < B_MAX_KEYS) {
+      n->parent = b_node_add(&(*node)->parent, k);
+      i = b_node_index(n->parent, k);
+      n->parent->childs[i] = *node;
+      n->parent->childs[i + 1] = n;
+      
+      fprintf(stderr, "iguales? %d\n", n->parent == (*node)->parent);
+    } else {
+      
+      /**
+       * El padre está hasta las manos. Hay que romperse la cabeza.
+       * 
+       * Casos:
+       *  1. el valor a insertar en el padre es menor que el valor medio =>
+       *     => `*node` y `n` tendrán como padre al padre de `*node`.
+       *  2. el valor a insertar en el padre _es_ el valor medio =>
+       *     => `*node` conservará a su padre y `n` tendrá como padre al nodo
+       *     creado en el llamado recursivo.
+       *  3. el valor a insertar en el padre es mayor que el valor medio =>
+       *     => `*node` y `n` tendrán como padre al nodo creado en el llamado
+       *     recursivo.
+       **/
+      if () {
+      } else if () {
+      } else {
+      }
+      
+    }
     
   }
   
