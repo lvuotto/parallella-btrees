@@ -1,6 +1,6 @@
 
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror -pedantic -g -O0
+CFLAGS = -Wall -Wextra -Werror -pedantic -ggdb -O0
 BINS = main
 OBJS = b-tree.o
 
