@@ -9,7 +9,7 @@ all: $(OBJS) $(BINS)
 
 
 b-tree.o: b-tree.c b-tree.h
-	$(CC) $(CFLAGS) -DB_DEBUG -c -o $@ $<
+	$(CC) $(CFLAGS) -DB_DEBUG -DB_LINEAR_SEARCH -c -o $@ $<
 
 main: main.c b-tree.o
 	$(CC) $(CFLAGS) -DB_DEBUG -o $@ $^

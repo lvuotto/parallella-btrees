@@ -64,9 +64,7 @@ bool b_find (const b_tree_t *tree, b_key_t key) {
   
   i = b_node_index(*n, key);
   
-  printf("%d == %d?\n", key, (*n)->keys[i]);
-  
-  return key == (*n)->keys[i];
+  return i < (*n)->used_keys && key == (*n)->keys[i];
 }
 
 
@@ -109,7 +107,7 @@ B_EXPORT b_node_t * b_node_new () {
  * que se realiza el split.
  **/
 B_EXPORT b_node_t * b_node_add (b_node_t **node, b_key_t key) {
-  b_node_t *n, *r;
+  b_node_t *n, *r, *c;
   int i, j, k;
   
   if (*node == NULL) {
@@ -121,13 +119,13 @@ B_EXPORT b_node_t * b_node_add (b_node_t **node, b_key_t key) {
     
   } else if ((*node)->used_keys < B_MAX_KEYS) {
     
-    /* Tengo que insertar en la posición i + 1, pues esta función es llamada
+    /* Tengo que insertar en la posición `i`, pues esta función es llamada
      * sii `key` no pertenece al árbol.
      * Se mueven los hijos adelante, salvo por el último caso, pues o bien
      * esta inserción se produce sobre una hoja, o bien se produce por un
      * split, y en ese caso, cuando se vuelva del llamado recursivo, los hijos
      * serán asignados correctamente. */
-    i = b_node_index(*node, key) + 1;
+    i = b_node_index(*node, key);
     for (j = (*node)->used_keys; j > i; j--) {
       (*node)->keys[j] = (*node)->keys[j - 1];
       (*node)->childs[j + 1] = (*node)->childs[j];
@@ -139,9 +137,18 @@ B_EXPORT b_node_t * b_node_add (b_node_t **node, b_key_t key) {
   } else {
     
     /* Hay que splitear :s */
-    i = b_node_index(*node, key);
-    k = (*node)->keys[i];
-    (*node)->keys[i] = key;
+    i = B_MAX_KEYS / 2;
+    c = (*node)->childs[i];
+    if (key < (*node)->keys[i - 1]) {
+      i--;
+      k = (*node)->keys[i];
+      b_node_replace(*node, key, i);
+    } else if (key < (*node)->keys[i]) {
+      k = key;
+    } else {
+      k = (*node)->keys[i];
+      b_node_replace(*node, key, i);
+    }
     
     n = b_node_new();
     for (j = B_MAX_KEYS / 2; j < B_MAX_KEYS; j++) {
@@ -151,6 +158,12 @@ B_EXPORT b_node_t * b_node_add (b_node_t **node, b_key_t key) {
     n->childs[j - B_MAX_KEYS / 2] = (*node)->childs[j];
     n->used_keys = B_MAX_KEYS - B_MAX_KEYS / 2;
     (*node)->used_keys = B_MAX_KEYS / 2;
+    
+    if (key < k) {
+      n->childs[0] = c;
+    } else if (key > k) {
+      (*node)->childs[B_MAX_KEYS / 2] = c;
+    }
     
     if ((*node)->parent == NULL || (*node)->parent->used_keys < B_MAX_KEYS) {
       n->parent = b_node_add(&(*node)->parent, k);
@@ -173,11 +186,11 @@ B_EXPORT b_node_t * b_node_add (b_node_t **node, b_key_t key) {
        *     recursivo.
        **/
       
-      if (k <= (*node)->parent->keys[B_MAX_KEYS / 2 - 1]) {
+      if (k < (*node)->parent->keys[B_MAX_KEYS / 2 - 1]) {
         /* k < keys[m - 1] */
         b_node_add(&((*node)->parent), k);
         n->parent = (*node)->parent;
-        i = b_node_index((*node)->parent, k);
+        i = b_node_index(n->parent, k);
         n->parent->childs[i] = *node;
         n->parent->childs[i + 1] = n;
       } else if (k < (*node)->parent->keys[B_MAX_KEYS / 2]) {
@@ -251,10 +264,10 @@ B_EXPORT int b_node_index (const b_node_t *node, b_key_t key) {
   
   assert(node != NULL);
   
-  if (node->used_keys == 0 || key < node->keys[0])
-    return -1;
+  /*if (node->used_keys == 0 || key < node->keys[0])
+    return -1;*/
   
-  for (i = 0; i < node->used_keys && keys > node->keys[i]; i++);
+  for (i = 0; i < node->used_keys && key > node->keys[i]; i++);
   
   return i;
   
@@ -300,8 +313,10 @@ B_EXPORT b_node_t ** b_node_find (const b_tree_t *tree, b_key_t key) {
   n = (b_node_t **) tree;
   while (*n != NULL) {
     i = b_node_index(*n, key);
-    if ((i == -1 || key != (*n)->keys[i]) && (*n)->childs[i + 1] != NULL) {
-      n = &((*n)->childs[i + 1]);
+    if ((i == (*n)->used_keys || key != (*n)->keys[i]) &&
+        (*n)->childs[i] != NULL)
+    {
+      n = &((*n)->childs[i]);
     } else {
       /* match concreto ó fin de la "recursión". */
       break;
