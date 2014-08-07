@@ -105,6 +105,9 @@ B_EXPORT b_node_t * b_node_new () {
  * Devuelve el nodo en el que se produjo la inserción.
  * Útil para obtener el nuevo padre en el momento en
  * que se realiza el split.
+ * 
+ * TODO:
+ *  - Los padres no matchean.
  **/
 B_EXPORT b_node_t * b_node_add (b_node_t **node, b_key_t key) {
   b_node_t *n, *r, *c;
@@ -161,12 +164,16 @@ B_EXPORT b_node_t * b_node_add (b_node_t **node, b_key_t key) {
     
     if (key < k) {
       n->childs[0] = c;
-    } else if (key > k) {
+    } else {
+      /* si k == key no hay drama, pues `c` será reemplazado luego. */
       (*node)->childs[B_MAX_KEYS / 2] = c;
     }
     
     if ((*node)->parent == NULL || (*node)->parent->used_keys < B_MAX_KEYS) {
       n->parent = b_node_add(&(*node)->parent, k);
+      
+      assert(n->parent == (*node)->parent);
+      
       i = b_node_index(n->parent, k);
       n->parent->childs[i] = *node;
       n->parent->childs[i + 1] = n;
@@ -187,24 +194,30 @@ B_EXPORT b_node_t * b_node_add (b_node_t **node, b_key_t key) {
        **/
       
       if (k < (*node)->parent->keys[B_MAX_KEYS / 2 - 1]) {
+        
         /* k < keys[m - 1] */
         b_node_add(&((*node)->parent), k);
         n->parent = (*node)->parent;
         i = b_node_index(n->parent, k);
         n->parent->childs[i] = *node;
         n->parent->childs[i + 1] = n;
+        
       } else if (k < (*node)->parent->keys[B_MAX_KEYS / 2]) {
+        
         /* keys[m - 1] < k < keys[m] */
         n->parent = b_node_add(&((*node)->parent), k);
         (*node)->parent->childs[B_MAX_KEYS / 2] = *node;
         n->parent->childs[0] = n;
+        
       } else {
+        
         /* keys[m] < k */
         n->parent = b_node_add(&((*node)->parent), k);
         (*node)->parent = n->parent;
         i = b_node_index(n->parent, k);
         n->parent->childs[i] = *node;
         n->parent->childs[i + 1] = n;
+        
       }
       
     }
@@ -222,7 +235,8 @@ B_EXPORT b_node_t * b_node_add (b_node_t **node, b_key_t key) {
  * TODO:
  *  - Fijarse si se debería hacer algo con los hijos. Como está ahora
  *    anda, pero andá a saber... -> hecho
- *  - Fijarse si se pierde algún hijo por el camino.
+ *  - Fijarse si se pierde algún hijo por el camino. -> resuelto en 
+ *    `b_node_add`.
  **/
 B_EXPORT void b_node_replace (b_node_t *node, b_key_t key, int i) {
   int j;
