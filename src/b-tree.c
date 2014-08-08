@@ -15,12 +15,12 @@
 
 
 #ifndef B_DEBUG
-static b_node_t *  b_node_new     ();
-static b_node_t *  b_node_add     (b_node_t **node, b_key_t key);
-static void        b_node_replace (b_node_t *node, b_key_t key, int i);
-static int         b_node_index   (const b_node_t *node, b_key_t key);
-static b_node_t ** b_node_find    (const b_tree_t *tree, b_key_t key);
-static void        b_node_delete  (b_node_t *node);
+static b_node_t *  b_node_new         ();
+static b_node_t *  b_node_add_nonfull (b_node_t **node, b_key_t key);
+static void        b_node_replace     (b_node_t *node, b_key_t key, int i);
+static int         b_node_index       (const b_node_t *node, b_key_t key);
+static b_node_t ** b_node_find        (const b_tree_t *tree, b_key_t key);
+static void        b_node_delete      (b_node_t *node);
 #endif
 
 
@@ -41,16 +41,26 @@ b_tree_t * b_new () {
 
 void b_add (b_tree_t *tree, b_key_t key) {
   b_node_t **n;
+  int i;
   
   n = b_node_find(tree, key);
   
-  if (*n == NULL || key != (*n)->keys[b_node_index(*n, key)]) {
-    b_node_add(n, key);
+  if (*n == NULL) {
+    b_node_add_nonfull(n, key);
+  } else {
+    i = b_node_index(*n, key);
     
-    if (tree->root->parent != NULL) {
-      tree->root = tree->root->parent;
-    }
+    if (key == (*n)->keys[i])
+      return;
+    
+    if ((*n)->used_keys == B_MAX_KEYS)
+      b_node_add_full(n, key);
+    else
+      b_node_add_nonfull(n, key);
   }
+  
+  if (tree->root->parent != NULL)
+    tree->root = tree->root->parent;
 }
 
 
@@ -91,10 +101,10 @@ B_EXPORT b_node_t * b_node_new () {
   node = (b_node_t *) malloc(sizeof(b_node_t));
   node->used_keys = 0;
   for (i = 0; i < B_MAX_KEYS; i++) {
-    node->childs[i] = NULL;
+    node->children[i] = NULL;
     node->keys[i] = B_INVALID_KEY;
   }
-  node->childs[B_MAX_KEYS] = NULL;
+  node->children[B_MAX_KEYS] = NULL;
   node->parent = NULL;
   
   return node;
@@ -109,18 +119,16 @@ B_EXPORT b_node_t * b_node_new () {
  * TODO:
  *  - Los padres no matchean.
  **/
-B_EXPORT b_node_t * b_node_add (b_node_t **node, b_key_t key) {
-  b_node_t *n, *r, *c;
-  int i, j, k;
+B_EXPORT b_node_t * b_node_add_nonfull (b_node_t **node, b_key_t key) {
+  int i, j;
   
   if (*node == NULL) {
     
     *node = b_node_new();
     (*node)->keys[0] = key;
-    (*node)->used_keys++;
-    r = *node;
+    (*node)->used_keys = 1;
     
-  } else if ((*node)->used_keys < B_MAX_KEYS) {
+  } else {
     
     /* Tengo que insertar en la posición `i`, pues esta función es llamada
      * sii `key` no pertenece al árbol.
@@ -131,101 +139,117 @@ B_EXPORT b_node_t * b_node_add (b_node_t **node, b_key_t key) {
     i = b_node_index(*node, key);
     for (j = (*node)->used_keys; j > i; j--) {
       (*node)->keys[j] = (*node)->keys[j - 1];
-      (*node)->childs[j + 1] = (*node)->childs[j];
+      (*node)->children[j + 1] = (*node)->children[j];
     }
     (*node)->keys[i] = key;
     (*node)->used_keys++;
-    r = *node;
     
-  } else {
-    
-    /* Hay que splitear :s */
-    i = B_MAX_KEYS / 2;
-    c = (*node)->childs[i];
-    if (key < (*node)->keys[i - 1]) {
-      i--;
-      k = (*node)->keys[i];
-      b_node_replace(*node, key, i);
-    } else if (key < (*node)->keys[i]) {
-      k = key;
-    } else {
-      k = (*node)->keys[i];
-      b_node_replace(*node, key, i);
-    }
-    
-    n = b_node_new();
-    for (j = B_MAX_KEYS / 2; j < B_MAX_KEYS; j++) {
-      n->childs[j - B_MAX_KEYS / 2] = (*node)->childs[j];
-      n->keys[j - B_MAX_KEYS / 2] = (*node)->keys[j];
-    }
-    n->childs[j - B_MAX_KEYS / 2] = (*node)->childs[j];
-    n->used_keys = B_MAX_KEYS - B_MAX_KEYS / 2;
-    (*node)->used_keys = B_MAX_KEYS / 2;
-    
-    if (key < k) {
-      n->childs[0] = c;
-    } else {
-      /* si k == key no hay drama, pues `c` será reemplazado luego. */
-      (*node)->childs[B_MAX_KEYS / 2] = c;
-    }
-    
-    if ((*node)->parent == NULL || (*node)->parent->used_keys < B_MAX_KEYS) {
-      n->parent = b_node_add(&(*node)->parent, k);
-      
-      assert(n->parent == (*node)->parent);
-      
-      i = b_node_index(n->parent, k);
-      n->parent->childs[i] = *node;
-      n->parent->childs[i + 1] = n;
-    } else {
-      
-      /**
-       * El padre está hasta las manos. Hay que romperse la cabeza.
-       * 
-       * Casos:
-       *  1. el valor a insertar en el padre es menor que el valor medio =>
-       *     => `*node` y `n` tendrán como padre al padre de `*node`.
-       *  2. el valor a insertar en el padre _es_ el valor medio =>
-       *     => `*node` conservará a su padre y `n` tendrá como padre al nodo
-       *     creado en el llamado recursivo.
-       *  3. el valor a insertar en el padre es mayor que el valor medio =>
-       *     => `*node` y `n` tendrán como padre al nodo creado en el llamado
-       *     recursivo.
-       **/
-      
-      if (k < (*node)->parent->keys[B_MAX_KEYS / 2 - 1]) {
-        
-        /* k < keys[m - 1] */
-        b_node_add(&((*node)->parent), k);
-        n->parent = (*node)->parent;
-        i = b_node_index(n->parent, k);
-        n->parent->childs[i] = *node;
-        n->parent->childs[i + 1] = n;
-        
-      } else if (k < (*node)->parent->keys[B_MAX_KEYS / 2]) {
-        
-        /* keys[m - 1] < k < keys[m] */
-        n->parent = b_node_add(&((*node)->parent), k);
-        (*node)->parent->childs[B_MAX_KEYS / 2] = *node;
-        n->parent->childs[0] = n;
-        
-      } else {
-        
-        /* keys[m] < k */
-        n->parent = b_node_add(&((*node)->parent), k);
-        (*node)->parent = n->parent;
-        i = b_node_index(n->parent, k);
-        n->parent->childs[i] = *node;
-        n->parent->childs[i + 1] = n;
-        
-      }
-      
-    }
-    
-    r = n;
   }
   
-  return r;
+  return *node;
+}
+
+
+/**
+ * Devuelve el nodo en el que se produjo la inserción.
+ * Útil para obtener el nuevo padre en el momento en
+ * que se realiza el split.
+ * 
+ * TODO:
+ *  - Los padres no matchean.
+ **/
+B_EXPORT b_node_t * b_node_add_full (b_node_t **node, b_key_t key) {
+  b_node_t *n, *backup;
+  int i, j, k;
+  
+  /* Hay que splitear :s */
+  i = B_MAX_KEYS / 2;
+  if (key < (*node)->keys[i - 1]) {
+    i--;
+    k = (*node)->keys[i];
+    b_node_replace(*node, key, i);
+  } else if (key < (*node)->keys[i]) {
+    k = key;
+  } else {
+    k = (*node)->keys[i];
+    b_node_replace(*node, key, i);
+  }
+  
+  n = b_node_new();
+  for (j = B_MAX_KEYS / 2; j < B_MAX_KEYS; j++) {
+    n->children[j - B_MAX_KEYS / 2] = (*node)->children[j];
+    n->keys[j - B_MAX_KEYS / 2] = (*node)->keys[j];
+  }
+  n->children[j - B_MAX_KEYS / 2] = (*node)->children[j];
+  n->used_keys = B_MAX_KEYS - B_MAX_KEYS / 2;
+  (*node)->used_keys = B_MAX_KEYS / 2;
+  
+  if (key > (*node)->keys[B_MAX_KEYS / 2 - 1]) {
+    /* Evito arruinar la estructura al acomodar los padres al final, pues si
+     * estoy en un llamado recursivo, al volver mi hijo se encargará de
+     * acomodar a sus hermanos como se debe. */
+    i = b_node_index(n, key);
+    n->children[i] = NULL;
+  }
+  
+  if ((*node)->parent == NULL || (*node)->parent->used_keys < B_MAX_KEYS) {
+    n->parent = b_node_add_nonfull(& (*node)->parent, k);
+    i = b_node_index(n->parent, k);
+    n->parent->children[i] = *node;
+    n->parent->children[i + 1] = n;
+  } else {
+    
+    /**
+     * El padre está hasta las manos. Hay que romperse la cabeza.
+     * 
+     * Casos:
+     *  1. el valor a insertar en el padre es menor que el valor medio =>
+     *     => `*node` y `n` tendrán como padre al padre de `*node`.
+     *  2. el valor a insertar en el padre _es_ el valor medio =>
+     *     => `*node` conservará a su padre y `n` tendrá como padre al nodo
+     *     creado en el llamado recursivo.
+     *  3. el valor a insertar en el padre es mayor que el valor medio =>
+     *     => `*node` y `n` tendrán como padre al nodo creado en el llamado
+     *     recursivo.
+     **/
+    
+    if (k < (*node)->parent->keys[B_MAX_KEYS / 2 - 1]) {
+      
+      /* k < keys[m - 1] */
+      b_node_add_full(& (*node)->parent, k);
+      n->parent = (*node)->parent;
+      i = b_node_index(n->parent, k);
+      n->parent->children[i] = *node;
+      n->parent->children[i + 1] = n;
+      
+    } else if (k < (*node)->parent->keys[B_MAX_KEYS / 2]) {
+      
+      /* keys[m - 1] < k < keys[m] */
+      n->parent = b_node_add_full(& (*node)->parent, k);
+      (*node)->parent->children[B_MAX_KEYS / 2] = *node;
+      n->parent->children[0] = n;
+      
+    } else {
+      
+      /* keys[m] < k */
+      n->parent = b_node_add_full(& (*node)->parent, k);
+      (*node)->parent = n->parent;
+      i = b_node_index(n->parent, k);
+      n->parent->children[i] = *node;
+      n->parent->children[i + 1] = n;
+      
+    }
+    
+  }
+  
+  backup = *node;
+  for (j = 0; j <= n->used_keys; j++) {
+    if (n->children[j] != NULL)
+      n->children[j]->parent = n;
+  }
+  *node = backup;
+  
+  return n;
 }
 
 
@@ -236,7 +260,7 @@ B_EXPORT b_node_t * b_node_add (b_node_t **node, b_key_t key) {
  *  - Fijarse si se debería hacer algo con los hijos. Como está ahora
  *    anda, pero andá a saber... -> hecho
  *  - Fijarse si se pierde algún hijo por el camino. -> resuelto en 
- *    `b_node_add`.
+ *    `b_node_add_nonfull`.
  **/
 B_EXPORT void b_node_replace (b_node_t *node, b_key_t key, int i) {
   int j;
@@ -246,7 +270,7 @@ B_EXPORT void b_node_replace (b_node_t *node, b_key_t key, int i) {
   if (key < node->keys[i]) {
     for (j = i; j > 0 && key < node->keys[j]; j--) {
       node->keys[j] = node->keys[j - 1];
-      node->childs[j + 1] = node->childs[j];
+      node->children[j + 1] = node->children[j];
     }
   } else {
     for (j = i; j < node->used_keys - 1 && key > node->keys[j + 1]; j++) {
@@ -328,9 +352,9 @@ B_EXPORT b_node_t ** b_node_find (const b_tree_t *tree, b_key_t key) {
   while (*n != NULL) {
     i = b_node_index(*n, key);
     if ((i == (*n)->used_keys || key != (*n)->keys[i]) &&
-        (*n)->childs[i] != NULL)
+        (*n)->children[i] != NULL)
     {
-      n = &((*n)->childs[i]);
+      n = & (*n)->children[i];
     } else {
       /* match concreto ó fin de la "recursión". */
       break;
@@ -350,7 +374,7 @@ B_EXPORT void b_node_delete (b_node_t *node) {
   
   if (node != NULL) {
     for (i = 0; i <= node->used_keys; i++) {
-      b_node_delete(node->childs[i]);
+      b_node_delete(node->children[i]);
     }
     
     free(node);

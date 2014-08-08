@@ -6,7 +6,8 @@
 #include "b-tree.h"
 
 
-#define HEAVY_TEST 17
+#define HEAVY_TEST (1 << 19)
+#define TAB_SIZE 4
 
 
 void print_node (b_node_t *node, int t) {
@@ -19,26 +20,26 @@ void print_node (b_node_t *node, int t) {
   tab[t] = 0;
   if (node != NULL) {
     printf("%s{", tab);
-    if (node->childs[0] == NULL) {
+    if (node->children[0] == NULL) {
       printf("}\n");
     } else {
       printf("\n");
-      print_node(node->childs[0], t+2);
+      print_node(node->children[0], t + TAB_SIZE);
       printf("%s}\n", tab);
     }
     for (i = 0; i < node->used_keys; i++) {
-      printf("%s'%d' [%d] [%p] [%p]\n%s{",
+      printf("%s'%d' [%d] [n %p] [p %p]\n%s{",
              tab,
              node->keys[i],
              node->used_keys,
              (void *) node,
              (void *) node->parent,
              tab);
-      if (node->childs[i] == NULL) {
+      if (node->children[i] == NULL) {
         printf("}\n");
       } else {
         printf("\n");
-        print_node(node->childs[i+1], t+2);
+        print_node(node->children[i + 1], t + TAB_SIZE);
         printf("%s}\n", tab);
       }
     }
@@ -54,22 +55,22 @@ bool checkear_nodos (b_node_t *n) {
   
   r = true;
   for (i = 0; i < n->used_keys && r; i++) {
-    if (n->childs[i] != NULL) {
-      assert(n->childs[i]->parent == n);
-      r = r && (n->childs[i]->parent == n);
-      if (n->childs[i]->used_keys > 0) {
-        r = r && (n->childs[i]->keys[n->childs[i]->used_keys - 1] < n->keys[i])
-              && (n->childs[i + 1] == NULL || n->keys[i] < n->childs[i + 1]->keys[0]);
+    if (n->children[i] != NULL) {
+      assert(n->children[i]->parent == n);
+      r = r && (n->children[i]->parent == n);
+      if (n->children[i]->used_keys > 0) {
+        r = r && (n->children[i]->keys[n->children[i]->used_keys - 1] < n->keys[i])
+              && (n->children[i + 1] == NULL || n->keys[i] < n->children[i + 1]->keys[0]);
       }
-      b = checkear_nodos(n->childs[i]);
+      b = checkear_nodos(n->children[i]);
       assert(b);
       r = r && b;
     }
   }
-  if (n->childs[i] != NULL) {
-    assert(n->childs[i]->parent == n);
-    r = r && (n->childs[i]->parent == n);
-    b = checkear_nodos(n->childs[i]);
+  if (n->children[i] != NULL) {
+    assert(n->children[i]->parent == n);
+    r = r && (n->children[i]->parent == n);
+    b = checkear_nodos(n->children[i]);
     assert(b);
     r = r && b;
   }
@@ -97,7 +98,7 @@ int main () {
   
   b_tree_t *tree;
   int a[HEAVY_TEST];
-  int i, j, m;
+  int i, j, m, c;
   
   srand(176);
   
@@ -115,18 +116,23 @@ int main () {
   }
   
   for (i = 0; i < HEAVY_TEST; i++) {
+    /*printf("Voy a agregar %d...\n", a[i]);*/
     b_add(tree, a[i]);
+    /*getchar();
+    print_node(tree->root, 0);*/
   }
   
-  print_node(tree->root, 0);
+  /*print_node(tree->root, 0);*/
   
+  c = 0;
   for (i = 0; i < HEAVY_TEST; i++) {
     m = b_find(tree, a[i]);
-    printf("[%d] -> %s\n", a[i], m ? "ok" : "no esta :(");
+    /*printf("[%d] -> %s\n", a[i], m ? "ok" : "no esta :(");*/
     if (!m) break;
+    else c++;
   }
   
-  printf("%s\n", m ? "estan todos!" : "fallo :'(");
+  printf("%s [%d]\n", m ? "estan todos!" : "fallo :'(", c);
   /*printf("%s\n", test_invariantes(tree) ? "ANDAAAAAAAAA" : "algo feo :s");*/
   
   b_delete(tree);
