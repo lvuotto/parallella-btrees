@@ -8,17 +8,7 @@
 
 
 #ifndef B_MAX_KEYS
-# define B_MAX_KEYS 2
-#endif
-
-#define B_INVALID_KEY (-404)
-
-#ifdef B_DEBUG
-# define B_EXPORT
-# define B_EXPORT_INLINE
-#else
-# define B_EXPORT static
-# define B_EXPORT_INLINE static inline
+# define B_MAX_KEYS 16
 #endif
 
 
@@ -44,29 +34,16 @@ bool       b_find    (const b_tree_t *tree, b_key_t key);
 void       b_delete  (b_tree_t *tree);
 
 
-#ifdef B_DEBUG
-
-B_EXPORT b_node_t *  b_node_new         ();
-B_EXPORT b_node_t *  b_node_add_nonfull (b_node_t **node, b_key_t key);
-B_EXPORT b_node_t *  b_node_add_full    (b_node_t **node, b_key_t key);
-B_EXPORT void        b_node_replace     (b_node_t *node, b_key_t key, int i);
-B_EXPORT int         b_node_index       (const b_node_t *node, b_key_t key);
-B_EXPORT b_node_t ** b_node_find        (const b_tree_t *tree, b_key_t key);
-B_EXPORT void        b_node_delete      (b_node_t *node);
-
-#endif
-
-
 /**
  * 
- * Invariante del árbol:
+ * Invariante de cada nodo árbol:
  *  - 0 <= `used_keys` <= B_MAX_KEYS.
  *  - `keys` está ordenado.
- *  - `value` != NULL sii el nodo es una hoja.
- *  - keys[i] < children[i+1]->keys[0] <= children[i+1]->keys[used_keys] < keys[i+1]
- *    (si 0 <= i < used_keys)
- *  - children[0]->keys[used_keys] < keys[0]
- *  - keys[used_keys] < children[used_keys]->keys[0]
+ *  - keys[i] < children[i+1]->keys[0] <=
+ *    children[i+1]->keys[children[i+1]->used_keys - 1] < keys[i+1]
+ *    (si 0 <= i < used_keys - 1)
+ *  - max_key(children[0]) < keys[0]
+ *  - keys[used_keys - 1] < min_key(children[used_keys])
  * 
  * Observaciones:
  *  - El árbol puede contener basura o residuos de su estructura en estados

@@ -6,8 +6,29 @@
 #include "b-tree.h"
 
 
-#define HEAVY_TEST (1 << 19)
+#define HEAVY_TEST (1 << 20)
 #define TAB_SIZE 4
+
+
+void node_replace (b_node_t *node, b_key_t key, int index) {
+  int j;
+  
+  assert(0 <= index && index < node->used_keys);
+  
+  if (key < node->keys[index]) {
+    for (j = index; j > 0 && key < node->keys[j - 1]; j--) {
+      node->keys[j] = node->keys[j - 1];
+      node->children[j + 1] = node->children[j];
+    }
+  } else {
+    for (j = index; j < node->used_keys - 1 && key > node->keys[j + 1]; j++) {
+      node->keys[j] = node->keys[j + 1];
+      node->children[j] = node->children[j + 1];
+    }
+  }
+  
+  node->keys[j] = key;
+}
 
 
 void print_node (b_node_t *node, int t) {
@@ -49,58 +70,16 @@ void print_node (b_node_t *node, int t) {
 }
 
 
-bool checkear_nodos (b_node_t *n) {
-  int i;
-  bool r, b;
-  
-  r = true;
-  for (i = 0; i < n->used_keys && r; i++) {
-    if (n->children[i] != NULL) {
-      assert(n->children[i]->parent == n);
-      r = r && (n->children[i]->parent == n);
-      if (n->children[i]->used_keys > 0) {
-        r = r && (n->children[i]->keys[n->children[i]->used_keys - 1] < n->keys[i])
-              && (n->children[i + 1] == NULL || n->keys[i] < n->children[i + 1]->keys[0]);
-      }
-      b = checkear_nodos(n->children[i]);
-      assert(b);
-      r = r && b;
-    }
-  }
-  if (n->children[i] != NULL) {
-    assert(n->children[i]->parent == n);
-    r = r && (n->children[i]->parent == n);
-    b = checkear_nodos(n->children[i]);
-    assert(b);
-    r = r && b;
-  }
-  
-  return r;
-}
-
-
-bool test_invariantes (b_tree_t *t) {
-  bool r;
-  
-  r = true;
-  
-  if (t == NULL || t->root == NULL)
-    return r;
-  
-  r = r && t->root->parent == NULL;
-  r = r && checkear_nodos(t->root);
-  
-  return r;
-}
-
-
 int main () {
   
   b_tree_t *tree;
   int a[HEAVY_TEST];
   int i, j, m, c;
   
-  srand(176);
+  c = time(NULL);
+  srand(time(NULL));
+  
+  printf("seed=%d\n", c);
   
   tree = b_new();
   
@@ -116,24 +95,17 @@ int main () {
   }
   
   for (i = 0; i < HEAVY_TEST; i++) {
-    /*printf("Voy a agregar %d...\n", a[i]);*/
     b_add(tree, a[i]);
-    /*getchar();
-    print_node(tree->root, 0);*/
   }
-  
-  /*print_node(tree->root, 0);*/
   
   c = 0;
   for (i = 0; i < HEAVY_TEST; i++) {
     m = b_find(tree, a[i]);
-    /*printf("[%d] -> %s\n", a[i], m ? "ok" : "no esta :(");*/
     if (!m) break;
     else c++;
   }
   
   printf("%s [%d]\n", m ? "estan todos!" : "fallo :'(", c);
-  /*printf("%s\n", test_invariantes(tree) ? "ANDAAAAAAAAA" : "algo feo :s");*/
   
   b_delete(tree);
   

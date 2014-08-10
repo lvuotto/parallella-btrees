@@ -1,7 +1,7 @@
 
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror -pedantic -ggdb -O0
-BINS = main
+CFLAGS = -Wall -Wextra -Werror -pedantic -ggdb -O0 -std=c99
+BINS = main test
 OBJS = b-tree.o
 
 
@@ -9,10 +9,13 @@ all: $(OBJS) $(BINS)
 
 
 b-tree.o: b-tree.c b-tree.h
-	$(CC) $(CFLAGS) -DB_DEBUG -DB_LINEAR_SEARCH -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 main: main.c b-tree.o
-	$(CC) $(CFLAGS) -DB_DEBUG -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^
+
+test: test.c b-tree.o
+	$(CC) $(CFLAGS) -o $@ $^
 
 
 clean:
