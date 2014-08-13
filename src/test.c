@@ -9,6 +9,8 @@
 #define HEAVY_TEST (1 << 20)
 #define eprintf(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)
 
+#define MSG_FIND_OK "Todas las claves estan en el arbol."
+#define MSG_FIND_FAIL "Hay claves que no estan en el arbol."
 #define MSG_OK   "El arbol esta bien armado."
 #define MSG_FAIL "El arbol tiene fallas de estructura."
 
@@ -51,9 +53,10 @@ int main () {
   
   c = 0;
   for (i = 0; i < HEAVY_TEST; i++) {
-    if (b_find(a[i])) c++;
+    if (b_find(tree, a[i])) c++;
   }
   
+  printf("%s\n", c == HEAVY_TEST ? MSG_FIND_OK : MSG_FIND_FAIL);
   printf("%s\n", test_invariantes(tree) ? MSG_OK : MSG_FAIL);
   
   b_delete(tree);
