@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <time.h>
-#include "b-tree.h"
+#include <b-tree.h>
 
 
 #define HEAVY_TEST (1 << 20)

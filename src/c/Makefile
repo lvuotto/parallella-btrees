@@ -3,22 +3,30 @@ CC = gcc
 CFLAGS = -Wall -Wextra -Werror -pedantic -ggdb -O0 -std=c99
 BINS = main test size
 OBJS = b-tree.o
+OBJDIR = ../../objs
+BINDIR = ../../bin
 
 
-all: $(OBJS) $(BINS)
+.PHONY: all clean
 
+main: main.c $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $< $(OBJDIR)/$(OBJS)
+	mv $@ $(BINDIR)
 
-b-tree.o: b-tree.c b-tree.h
+all: $(BINS)
+
+test: test.c $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $< $(OBJDIR)/$(OBJS)
+	mv $@ $(BINDIR)
+
+size: size.c $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $< $(OBJDIR)/$(OBJS)
+	mv $@ $(BINDIR)
+
+%.o: %.c %.h
 	$(CC) $(CFLAGS) -c -o $@ $<
-
-main: main.c b-tree.o
-	$(CC) $(CFLAGS) -o $@ $^
-
-test: test.c b-tree.o
-	$(CC) $(CFLAGS) -o $@ $^
-
-size: size.c b-tree.o
-	$(CC) $(CFLAGS) -o $@ $^
+	mv $@ $(OBJDIR)
 
 clean:
-	rm -f $(BINS) $(OBJS)
+	rm -f $(OBJDIR)/$(OBJS)
+	rm -f $(BINDIR)/$(BINS)
