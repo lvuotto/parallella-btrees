@@ -15,11 +15,11 @@ int main () {
   e_init(NULL);
   e_reset_system();
   e_get_platform_info(&platform);
-  e_alloc(&mem, BTMI_ADDRESS, sizeof(btmi));
   
-  static b_tree_msg_t btmi[16];
-  memset(mem, 0, sizeof(btmi));
-
+  static b_tree_msg_t btmi[E_CORES];
+  memset(&mem, 0, sizeof(btmi));
+  
+  e_alloc(&mem, BTMI_ADDRESS, sizeof(btmi));
   e_epiphany_t device;
   e_open(&device, 0, 0, platform.rows, platform.cols);
   e_write(&mem, 0, 0, 0, btmi, sizeof(btmi));
