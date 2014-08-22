@@ -12,50 +12,54 @@
 
 int main () {
   e_coreid_t coreid = e_get_coreid();
-  uint32_t row, col, core;
-  e_coords_form_coreid(coreid, &row, &col);
+  unsigned int row, col, core;
+  e_coords_from_coreid(coreid, &row, &col);
   core = row*e_group_config.group_cols + col;
 
-  srand(time(NULL));
-  
-  uint32_t *tca32, m32, start, end;
-  uint8_t *tca8, m8;
-  uint16_t *tca16, m16;
-  volatile bm_msg_t *msg = (bm_msg_t *) BMMI_ADDRESS;
-  tca32 = (uint32_t *) 0x4000;
-  tca16 = (uint16_t *) 0x4100;
-  tca8  = (uint8_t  *) 0x4200;
-  tca32 = 0;
-  tca16 = 0;
-  tca8  = 0;
-  for (col = 0; col < e_group_config.group_cols; col++) {
-    for (row = 0; row < e_group_config.group_rows; row++) {
-      tca32 = e_get_global_address(row, col, tca32);
-      tca16 = e_get_global_address(row, col, tca16);
-      tca8  = e_get_global_address(row, col, tca8 );
+  srand(core);
 
-      m32 = 1 + rand() % 0xffffffff;
-      m16 = 1 + rand() % 0xffff;
-      m8  = 1 + rand() % 0xff;
+  volatile bm_msg_t *bmmi = (bm_msg_t *) BMMI_ADDRESS;
+  bmmi[core].coreid = coreid;
 
+  unsigned int tcore;
+  uint32_t *d32 = (uint32_t *) 0x4000;
+  uint16_t *d16 = (uint16_t *) 0x5000;
+  uint8_t  *d8  = (uint8_t  *) 0x6000;
+  uint32_t v32;
+  uint16_t v16;
+  uint8_t  v8;
+  for (row = 0; row < e_group_config.group_rows; row++) {
+    for (col = 0; col < e_group_config.group_cols; col++) {
+      tcore = row*e_group_config.group_cols + col;
+      /*if (tcore == core) continue;*/
+      d32 = e_get_global_address(row, col, d32);
+      d16 = e_get_global_address(row, col, d16);
+      d8  = e_get_global_address(row, col, d8 );
+
+      v32 = 0x80000000 + (rand() & 0x7fffffff);
+      v16 =     0x8000 + (rand() & 0x7fff);
+      v8  =       0x80 + (rand() & 0x7f);
+
+      e_ctimer_set(E_CTIMER_0, 0xffffffff);
       e_ctimer_start(E_CTIMER_0, E_CTIMER_CLK);
-      *tca32 = m32;
+      *d32 = v32;
       e_ctimer_stop(E_CTIMER_0);
-      msg->ticks[core].t32 = 0xffffffff - e_ctimer_get(E_CTIMER_0);
+      bmmi[core].ticks[tcore].t32 = 0xffffffff - e_ctimer_get(E_CTIMER_0);
       
+      e_ctimer_set(E_CTIMER_0, 0xffffffff);
       e_ctimer_start(E_CTIMER_0, E_CTIMER_CLK);
-      *tca16 = m16;
+      *d16 = v16;
       e_ctimer_stop(E_CTIMER_0);
-      msg->ticks[core].t16 = 0xffffffff - e_ctimer_get(E_CTIMER_0);
+      bmmi[core].ticks[tcore].t16 = 0xffffffff - e_ctimer_get(E_CTIMER_0);
       
+      e_ctimer_set(E_CTIMER_0, 0xffffffff);
       e_ctimer_start(E_CTIMER_0, E_CTIMER_CLK);
-      *tca8 = m8;
+      *d8 = v8;
       e_ctimer_stop(E_CTIMER_0);
-      msg->ticks[core].t8 = 0xffffffff - e_ctimer_get(E_CTIMER_0);
+      bmmi[core].ticks[tcore].t8 = 0xffffffff - e_ctimer_get(E_CTIMER_0);
     }
   }
-
-  msg->status[core] = E_TRUE;
+  bmmi[core].finished = E_TRUE;
 
   return 0;
 }

@@ -1,7 +1,7 @@
 
-#ifndef __BMI_H__
+#ifndef __BMMI_H__
 
-#define __BMI_H__
+#define __BMMI_H__
 
 
 #include <stdint.h>
@@ -15,14 +15,14 @@ struct bm_ticks_s {
   uint32_t t32;
   uint32_t t16;
   uint32_t t8;
-};
+} __attribute__((packed));
 
 struct bm_msg_s {
-  uint32_t    coreids[16];
+  uint32_t    coreid;
   bm_ticks_t  ticks[16];
-  uint32_t    status[16];
-};
+  uint32_t    finished;
+} __attribute__((packed));
 
 
-#endif  /* __BMI_H__ */
+#endif  /* __BMMI_H__ */
 

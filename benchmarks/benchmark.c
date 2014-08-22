@@ -4,8 +4,8 @@
 #include <string.h>
 #include <time.h>
 #include <e-hal.h>
-#include "nano-wait.h"
 
+#include "nano-wait.h"
 #include "bmmi.h"
 
 
@@ -37,14 +37,25 @@ int main () {
   e_get_platform_info(&platform);
 
   static bm_msg_t bmmi[E_CORES];
-  memset(&mem, 0, sizeof(bmmi));
+  memset(bmmi, 0, sizeof(bmmi));
   e_alloc(&mem, BMMI_ADDRESS, sizeof(bmmi));
   
   e_epiphany_t device;
   e_open(&device, 0, 0, platform.rows, platform.cols);
   e_write(&mem, 0, 0, 0, bmmi, sizeof(bmmi));
   e_reset_group(&device);
-  e_load_group("e_benchmarks.srec", &device, 0, 0, platform.rows, platform.cols, E_TRUE);
+  int status = e_load_group("e_benchmark.srec",
+                            &device,
+                            0,
+                            0,
+                            platform.rows,
+                            platform.cols,
+                            E_TRUE);
+
+  if (status != E_OK) {
+    fprintf(stderr, "Hubo un error al cargar.\n");
+    return 1;
+  }
 
   nano_wait(0, 10000000);
 
@@ -58,14 +69,15 @@ int main () {
                0,
                (off_t) ((char *) &bmmi[core] - (char *) bmmi),
                &bmmi[core],
-               sizeof(bmmi[core]));
-        if (bmmi[core].status != E_FALSE)
+               sizeof(bm_msg_t));
+        if (bmmi[core].finished == E_TRUE) {
           break;
+        }
         nano_wait(0, 1000000);
       }
     }
   }
-  
+
   unsigned int tcore;
   for (core = 0; core < platform.rows*platform.cols; core++) {
     printf("core#%u:\n", core);
@@ -80,7 +92,7 @@ int main () {
       }
     }
   }
-  
+
   e_close(&device);
   e_free(&mem);
   e_finalize();

@@ -6,5 +6,4 @@ ESDK=${EPIPHANY_HOME}
 ELIBS=${ESDK}/tools/host/lib:${LD_LIBRARY_PATH}
 EHDF=${EPIPHANY_HDF}
 
-sudo -E EPIPHANY_HDF=${EHDF} ./benchmark
-
+sudo -E EPIPHANY_HDF=${EHDF} ./$1
