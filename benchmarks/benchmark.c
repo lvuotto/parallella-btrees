@@ -44,13 +44,11 @@ int main () {
   e_open(&device, 0, 0, platform.rows, platform.cols);
   e_write(&mem, 0, 0, 0, bmmi, sizeof(bmmi));
   e_reset_group(&device);
-  int status = e_load_group("e_benchmark.srec",
-                            &device,
-                            0,
-                            0,
-                            platform.rows,
-                            platform.cols,
-                            E_TRUE);
+  int status = e_load("e_write.srec",
+                      &device,
+                      0,
+                      0,
+                      E_TRUE);
 
   if (status != E_OK) {
     fprintf(stderr, "Hubo un error al cargar.\n");
@@ -59,37 +57,72 @@ int main () {
 
   nano_wait(0, 10000000);
 
-  unsigned int core;
-  for (unsigned int row = 0; row < platform.rows; row++) {
-    for (unsigned int col = 0; col < platform.cols; col++) {
-      core = row*platform.cols + col;
-      while (E_TRUE) {
-        e_read(&mem,
-               0,
-               0,
-               (off_t) ((char *) &bmmi[core] - (char *) bmmi),
-               &bmmi[core],
-               sizeof(bm_msg_t));
-        if (bmmi[core].finished == E_TRUE) {
-          break;
-        }
-        nano_wait(0, 1000000);
-      }
+  unsigned int core = 0;
+  while (E_TRUE) {
+    e_read(&mem,
+           0,
+           0,
+           (off_t) ((char *) &bmmi[core] - (char *) bmmi),
+           &bmmi[core],
+           sizeof(bm_msg_t));
+    if (bmmi[core].finished == E_TRUE) {
+      break;
     }
+    nano_wait(0, 1000000);
   }
 
   unsigned int tcore;
-  for (core = 0; core < platform.rows*platform.cols; core++) {
-    printf("core#%u:\n", core);
-    for (unsigned int row = 0; row < platform.rows; row++) {
-      for (unsigned int col = 0; col < platform.cols; col++) {
-        tcore = row*platform.cols + col;
-        printf("  tcore#%u: t32=%u, t16=%u, t8=%u\n",
-               tcore,
-               bmmi[core].ticks[tcore].t32,
-               bmmi[core].ticks[tcore].t16,
-               bmmi[core].ticks[tcore].t8);
-      }
+  puts("Write:");
+  printf("core#%u:\n", core);
+  for (unsigned int row = 0; row < platform.rows; row++) {
+    for (unsigned int col = 0; col < platform.cols; col++) {
+      tcore = row*platform.cols + col;
+      printf("  tcore#%-2u: t32=%.3f, t16=%.3f, t8=%.3f\n",
+             tcore,
+             bmmi[core].ticks[tcore].t32,
+             bmmi[core].ticks[tcore].t16,
+             bmmi[core].ticks[tcore].t8);
+    }
+  }
+
+  e_reset_group(&device);
+  status = e_load("e_read.srec",
+                  &device,
+                  0,
+                  0,
+                  E_TRUE);
+
+  if (status != E_OK) {
+    fprintf(stderr, "Hubo un error al cargar.\n");
+    return 1;
+  }
+
+  nano_wait(0, 10000000);
+
+  while (E_TRUE) {
+    e_read(&mem,
+           0,
+           0,
+           (off_t) ((char *) &bmmi[core] - (char *) bmmi),
+           &bmmi[core],
+           sizeof(bm_msg_t));
+    if (bmmi[core].finished == E_TRUE) {
+      break;
+    }
+    nano_wait(0, 1000000);
+  }
+  
+  puts("");
+  puts("Read:");
+  printf("core#%u:\n", core);
+  for (unsigned int row = 0; row < platform.rows; row++) {
+    for (unsigned int col = 0; col < platform.cols; col++) {
+      tcore = row*platform.cols + col;
+      printf("  tcore#%-2u: t32=%.3f, t16=%.3f, t8=%.3f\n",
+             tcore,
+             bmmi[core].ticks[tcore].t32,
+             bmmi[core].ticks[tcore].t16,
+             bmmi[core].ticks[tcore].t8);
     }
   }
 

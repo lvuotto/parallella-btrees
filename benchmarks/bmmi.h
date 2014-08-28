@@ -12,9 +12,9 @@ typedef struct bm_msg_s   bm_msg_t;
 
 
 struct bm_ticks_s {
-  uint32_t t32;
-  uint32_t t16;
-  uint32_t t8;
+  double t32;
+  double t16;
+  double t8;
 } __attribute__((packed));
 
 struct bm_msg_s {
