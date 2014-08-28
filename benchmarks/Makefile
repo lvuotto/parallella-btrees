@@ -3,8 +3,8 @@ ESDK = $(EPIPHANY_HOME)
 ELIBS = $(ESDK)/tools/host/lib
 EINCS = $(ESDK)/tools/host/include
 ELDF = $(ESDK)/bsps/current/internal.ldf
-BINS = benchmark e_write.srec e_read.srec tiempos e_tiempos.srec
-OBJS = e_write.elf e_read.elf e_tiempos.elf
+BINS = benchmark benchmark_asm e_write*.srec e_read*.srec tiempos e_tiempos.srec
+OBJS = e_write*.elf e_read*.elf e_tiempos.elf
 
 CC = gcc
 ECC = e-gcc
@@ -25,6 +25,17 @@ e_write.elf: e_write.c bmmi.h
 
 e_read.elf: e_read.c bmmi.h
 	$(ECC) $(CFLAGS) $(EFLAGS) -O3 -T $(ELDF) -o $@ $< -le-lib
+
+
+benchmark_asm: benchmark_asm.c bmmi.h e_write_asm.srec e_read_asm.srec
+	$(CC) $(CFLAGS) -I$(EINCS) -L$(ELIBS) -o $@ $< -le-hal -lrt
+
+e_write_asm.elf: e_write_asm.c bmmi.h
+	$(ECC) $(CFLAGS) $(EFLAGS) -O3 -T $(ELDF) -o $@ $< -le-lib
+
+e_read_asm.elf: e_read_asm.c bmmi.h
+	$(ECC) $(CFLAGS) $(EFLAGS) -O3 -T $(ELDF) -o $@ $< -le-lib
+
 
 tiempos: tiempos.c compartido.h e_tiempos.srec
 	$(CC) $(CFLAGS) -I$(EINCS) -L$(ELIBS) -o $@ $< -le-hal -lrt
