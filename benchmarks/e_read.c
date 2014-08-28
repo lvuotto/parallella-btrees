@@ -41,7 +41,7 @@ int main () {
       e_ctimer_set(E_CTIMER_0, E_CTIMER_MAX);
       e_ctimer_start(E_CTIMER_0, E_CTIMER_CLK);
       for (i = 0; i < TIMES; i++)
-        v32 = d32[i];
+        e_read(&e_group_config, &v32, trow, tcol, d32 + i, sizeof(v32));
       e_ctimer_stop(E_CTIMER_0);
       reads = E_CTIMER_MAX - e_ctimer_get(E_CTIMER_0);
       e_ctimer_set(E_CTIMER_0, E_CTIMER_MAX);
@@ -54,7 +54,7 @@ int main () {
       e_ctimer_set(E_CTIMER_0, E_CTIMER_MAX);
       e_ctimer_start(E_CTIMER_0, E_CTIMER_CLK);
       for (i = 0; i < TIMES; i++)
-        v16 = d16[2*i];
+        e_read(&e_group_config, &v16, trow, tcol, d16 + i, sizeof(v16));
       e_ctimer_stop(E_CTIMER_0);
       reads = E_CTIMER_MAX - e_ctimer_get(E_CTIMER_0);
       e_ctimer_set(E_CTIMER_0, E_CTIMER_MAX);
@@ -67,7 +67,7 @@ int main () {
       e_ctimer_set(E_CTIMER_0, E_CTIMER_MAX);
       e_ctimer_start(E_CTIMER_0, E_CTIMER_CLK);
       for (i = 0; i < TIMES; i++)
-        v8 = d8[4*i];
+        e_read(&e_group_config, &v8, trow, tcol, d8 + i, sizeof(v8));
       e_ctimer_stop(E_CTIMER_0);
       reads = E_CTIMER_MAX - e_ctimer_get(E_CTIMER_0);
       e_ctimer_set(E_CTIMER_0, E_CTIMER_MAX);

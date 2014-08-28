@@ -7,6 +7,14 @@
 #include "bmmi.h"
 
 
+/*#define READ_LOOP() { \
+    
+}
+#define DUMMY_READ_LOOP() { \
+
+}*/
+
+
 #define BMMI_ADDRESS 0x8f000000
 #define TIMES        1000
 
@@ -44,7 +52,7 @@ int main () {
       e_ctimer_set(E_CTIMER_0, E_CTIMER_MAX);
       e_ctimer_start(E_CTIMER_0, E_CTIMER_CLK);
       for (int i = 0; i < TIMES; i++)
-        d32[i] = v32;
+        e_write(&e_group_config, &v32, trow, tcol, d32 + i, sizeof(v32));
       e_ctimer_stop(E_CTIMER_0);
       writes = E_CTIMER_MAX - e_ctimer_get(E_CTIMER_0);
       e_ctimer_set(E_CTIMER_0, E_CTIMER_MAX);
@@ -57,7 +65,7 @@ int main () {
       e_ctimer_set(E_CTIMER_0, E_CTIMER_MAX);
       e_ctimer_start(E_CTIMER_0, E_CTIMER_CLK);
       for (int i = 0; i < TIMES; i++)
-        d16[2*i] = v16;
+        e_write(&e_group_config, &v16, trow, tcol, d16 + i, sizeof(v16));
       e_ctimer_stop(E_CTIMER_0);
       writes = E_CTIMER_MAX - e_ctimer_get(E_CTIMER_0);
       e_ctimer_set(E_CTIMER_0, E_CTIMER_MAX);
@@ -70,7 +78,7 @@ int main () {
       e_ctimer_set(E_CTIMER_0, E_CTIMER_MAX);
       e_ctimer_start(E_CTIMER_0, E_CTIMER_CLK);
       for (int i = 0; i < TIMES; i++)
-        d8[4*i] = v8;
+        e_write(&e_group_config, &v8, trow, tcol, d8 + 4*i, sizeof(v8));
       e_ctimer_stop(E_CTIMER_0);
       writes = E_CTIMER_MAX - e_ctimer_get(E_CTIMER_0);
       e_ctimer_set(E_CTIMER_0, E_CTIMER_MAX);
