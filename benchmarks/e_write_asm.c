@@ -56,10 +56,10 @@ int main () {
       __asm__ __volatile__("mov r33, %2\n"
                            "mov r32, %0\n"
                            "mov r34, %1\n"
-                           "._write_loop: "
-                           "str.l r34, [r32], #4\n"
+                           "._write_loop_32: "
+                           "str r34, [r32], #4\n"
                            "sub r33, r33, #1\n"
-                           "bne ._write_loop\n"
+                           "bne ._write_loop_32\n"
                            : /* no output */
                            : "r"(d32), "r"(v32), "i"(TIMES)
                            : "r32", "r33", "r34");
@@ -72,40 +72,84 @@ int main () {
       __asm__ __volatile__("mov r33, %2\n"
                            "mov r32, %0\n"
                            "mov r34, %1\n"
-                           "._dummy_write_loop: "
+                           "._dummy_write_loop_32: "
                            "nop\n"
                            "sub r33, r33, #1\n"
-                           "bne ._dummy_write_loop\n"
+                           "bne ._dummy_write_loop_32\n"
                            : /* no output */
                            : "r"(d32), "r"(v32), "i"(TIMES)
                            : "r32", "r33", "r34");
-      
+     
       e_ctimer_stop(E_CTIMER_0);
       nops = E_CTIMER_MAX - e_ctimer_get(E_CTIMER_0);
       bmmi[core].ticks[tcore].t32 = (writes - nops) / (double) (TIMES);
 
       e_ctimer_set(E_CTIMER_0, E_CTIMER_MAX);
       e_ctimer_start(E_CTIMER_0, E_CTIMER_CLK);
-      for (int i = 0; i < TIMES; i++)
-        e_write(&e_group_config, &v16, trow, tcol, d16 + i, sizeof(v16));
+      
+      /* WRITE LOOP */
+      __asm__ __volatile__("mov r33, %2\n"
+                           "mov r32, %0\n"
+                           "mov r34, %1\n"
+                           "._write_loop_16: "
+                           "strh r34, [r32], #4\n"
+                           "sub r33, r33, #1\n"
+                           "bne ._write_loop_16\n"
+                           : /* no output */
+                           : "r"(d16), "r"(v16), "i"(TIMES)
+                           : "r32", "r33", "r34");
+
       e_ctimer_stop(E_CTIMER_0);
       writes = E_CTIMER_MAX - e_ctimer_get(E_CTIMER_0);
       e_ctimer_set(E_CTIMER_0, E_CTIMER_MAX);
-      for (int i = 0; i < TIMES; i++)
-        __asm__("nop");
+      
+      /* DUMMY WRITE LOOP */
+      __asm__ __volatile__("mov r33, %2\n"
+                           "mov r32, %0\n"
+                           "mov r34, %1\n"
+                           "._dummy_write_loop_16: "
+                           "nop\n"
+                           "sub r33, r33, #1\n"
+                           "bne ._dummy_write_loop_16\n"
+                           : /* no output */
+                           : "r"(d16), "r"(v16), "i"(TIMES)
+                           : "r32", "r33", "r34");
+     
       e_ctimer_stop(E_CTIMER_0);
       nops = E_CTIMER_MAX - e_ctimer_get(E_CTIMER_0);
       bmmi[core].ticks[tcore].t16 = (writes - nops) / (double) (TIMES);
 
       e_ctimer_set(E_CTIMER_0, E_CTIMER_MAX);
       e_ctimer_start(E_CTIMER_0, E_CTIMER_CLK);
-      for (int i = 0; i < TIMES; i++)
-        e_write(&e_group_config, &v8, trow, tcol, d8 + 4*i, sizeof(v8));
+      
+      /* WRITE LOOP */
+      __asm__ __volatile__("mov r33, %2\n"
+                           "mov r32, %0\n"
+                           "mov r34, %1\n"
+                           "._write_loop_8: "
+                           "strb r34, [r32], #4\n"
+                           "sub r33, r33, #1\n"
+                           "bne ._write_loop_8\n"
+                           : /* no output */
+                           : "r"(d8), "r"(v8), "i"(TIMES)
+                           : "r32", "r33", "r34");
+
       e_ctimer_stop(E_CTIMER_0);
       writes = E_CTIMER_MAX - e_ctimer_get(E_CTIMER_0);
       e_ctimer_set(E_CTIMER_0, E_CTIMER_MAX);
-      for (int i = 0; i < TIMES; i++)
-        __asm__("nop");
+      
+      /* DUMMY WRITE LOOP */
+      __asm__ __volatile__("mov r33, %2\n"
+                           "mov r32, %0\n"
+                           "mov r34, %1\n"
+                           "._dummy_write_loop_8: "
+                           "nop\n"
+                           "sub r33, r33, #1\n"
+                           "bne ._dummy_write_loop_8\n"
+                           : /* no output */
+                           : "r"(d8), "r"(v8), "i"(TIMES)
+                           : "r32", "r33", "r34");
+     
       e_ctimer_stop(E_CTIMER_0);
       nops = E_CTIMER_MAX - e_ctimer_get(E_CTIMER_0);
       bmmi[core].ticks[tcore].t8 = (writes - nops) / (double) (TIMES);
@@ -115,4 +159,3 @@ int main () {
 
   return 0;
 }
-

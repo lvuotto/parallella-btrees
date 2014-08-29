@@ -3,7 +3,8 @@ ESDK = $(EPIPHANY_HOME)
 ELIBS = $(ESDK)/tools/host/lib
 EINCS = $(ESDK)/tools/host/include
 ELDF = $(ESDK)/bsps/current/internal.ldf
-BINS = benchmark benchmark_asm e_write*.srec e_read*.srec tiempos e_tiempos.srec
+BINS = benchmark tiempos 
+DEPS = e_write.srec e_read.srec e_write_asm.srec e_read_asm.srec
 OBJS = e_write*.elf e_read*.elf e_tiempos.elf
 
 CC = gcc
@@ -17,7 +18,7 @@ EOFLAGS = --srec-forceS3 --output-target srec
 .PHONY: all clean
 
 
-benchmark: benchmark.c bmmi.h e_write.srec e_read.srec
+benchmark: benchmark.c bmmi.h $(DEPS)
 	$(CC) $(CFLAGS) -I$(EINCS) -L$(ELIBS) -o $@ $< -le-hal -lrt
 
 e_write.elf: e_write.c bmmi.h
@@ -25,10 +26,6 @@ e_write.elf: e_write.c bmmi.h
 
 e_read.elf: e_read.c bmmi.h
 	$(ECC) $(CFLAGS) $(EFLAGS) -O3 -T $(ELDF) -o $@ $< -le-lib
-
-
-benchmark_asm: benchmark_asm.c bmmi.h e_write_asm.srec e_read_asm.srec
-	$(CC) $(CFLAGS) -I$(EINCS) -L$(ELIBS) -o $@ $< -le-hal -lrt
 
 e_write_asm.elf: e_write_asm.c bmmi.h
 	$(ECC) $(CFLAGS) $(EFLAGS) -O3 -T $(ELDF) -o $@ $< -le-lib
@@ -52,4 +49,5 @@ all: $(BINS)
 
 clean:
 	rm -f $(OBJS)
+	rm -f *.srec
 	rm -f $(BINS)

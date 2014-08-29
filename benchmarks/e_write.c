@@ -7,14 +7,6 @@
 #include "bmmi.h"
 
 
-/*#define READ_LOOP() { \
-    
-}
-#define DUMMY_READ_LOOP() { \
-
-}*/
-
-
 #define BMMI_ADDRESS 0x8f000000
 #define TIMES        1000
 
