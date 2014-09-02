@@ -22,62 +22,60 @@ int main () {
   volatile bm_msg_t *bmmi = (bm_msg_t *) BMMI_ADDRESS;
   bmmi[core].coreid = coreid;
 
-  unsigned int tcore, reads, nops;
-  uint32_t *b32 = (uint32_t *) 0x4000;
-  uint16_t *b16 = (uint16_t *) 0x5000;
-  uint8_t  *b8  = (uint8_t  *) 0x6000;
+  unsigned int tcore, writes, nops;
   uint32_t v32;
   uint16_t v16;
   uint8_t  v8;
-  uint32_t i;
   for (unsigned int trow = 0; trow < e_group_config.group_rows; trow++) {
     for (unsigned int tcol = 0; tcol < e_group_config.group_cols; tcol++) {
       tcore = trow*e_group_config.group_cols + tcol;
       /*if (tcore == core) continue;*/
-      uint32_t *d32 = e_get_global_address(trow, tcol, b32);
-      uint16_t *d16 = e_get_global_address(trow, tcol, b16);
-      uint8_t  *d8  = e_get_global_address(trow, tcol, b8 );
+      volatile uint32_t *d32 = (uint32_t *) (BMMI_ADDRESS + 0x1000);
+      volatile uint16_t *d16 = (uint16_t *) (BMMI_ADDRESS + 0x2000);
+      volatile uint8_t  *d8  = (uint8_t  *) (BMMI_ADDRESS + 0x3000);
+
+      v32 = 0x80000000 + (rand() & 0x7fffffff);
+      v16 =     0x8000 + (rand() & 0x7fff);
+      v8  =       0x80 + (rand() & 0x7f);
 
       e_ctimer_set(E_CTIMER_0, E_CTIMER_MAX);
       e_ctimer_start(E_CTIMER_0, E_CTIMER_CLK);
-      for (i = 0; i < TIMES; i++)
-        e_read(&e_group_config, &v32, trow, tcol, d32 + i, sizeof(v32));
+      for (int i = 0; i < TIMES; i++)
+        d32[i] = v32;
       e_ctimer_stop(E_CTIMER_0);
-      reads = E_CTIMER_MAX - e_ctimer_get(E_CTIMER_0);
+      writes = E_CTIMER_MAX - e_ctimer_get(E_CTIMER_0);
       e_ctimer_set(E_CTIMER_0, E_CTIMER_MAX);
-      for (i = 0; i < TIMES; i++)
+      for (int i = 0; i < TIMES; i++)
         __asm__("nop");
       e_ctimer_stop(E_CTIMER_0);
       nops = E_CTIMER_MAX - e_ctimer_get(E_CTIMER_0);
-      bmmi[core].ticks[tcore].t32 = (reads - nops) / (double) (TIMES);
+      bmmi[core].ticks[tcore].t32 = (writes - nops) / (double) (TIMES);
 
       e_ctimer_set(E_CTIMER_0, E_CTIMER_MAX);
       e_ctimer_start(E_CTIMER_0, E_CTIMER_CLK);
-      for (i = 0; i < TIMES; i++)
-        e_read(&e_group_config, &v16, trow, tcol, d16 + i, sizeof(v16));
+      for (int i = 0; i < TIMES; i++)
+        d16[2*i] = v16;
       e_ctimer_stop(E_CTIMER_0);
-      reads = E_CTIMER_MAX - e_ctimer_get(E_CTIMER_0);
+      writes = E_CTIMER_MAX - e_ctimer_get(E_CTIMER_0);
       e_ctimer_set(E_CTIMER_0, E_CTIMER_MAX);
-      for (i = 0; i < TIMES; i++)
+      for (int i = 0; i < TIMES; i++)
         __asm__("nop");
       e_ctimer_stop(E_CTIMER_0);
       nops = E_CTIMER_MAX - e_ctimer_get(E_CTIMER_0);
-      bmmi[core].ticks[tcore].t16 = (reads - nops) / (double) (TIMES);
+      bmmi[core].ticks[tcore].t16 = (writes - nops) / (double) (TIMES);
 
       e_ctimer_set(E_CTIMER_0, E_CTIMER_MAX);
       e_ctimer_start(E_CTIMER_0, E_CTIMER_CLK);
-      for (i = 0; i < TIMES; i++)
-        e_read(&e_group_config, &v8, trow, tcol, d8 + i, sizeof(v8));
+      for (int i = 0; i < TIMES; i++)
+        d8[4*i] = v8;
       e_ctimer_stop(E_CTIMER_0);
-      reads = E_CTIMER_MAX - e_ctimer_get(E_CTIMER_0);
+      writes = E_CTIMER_MAX - e_ctimer_get(E_CTIMER_0);
       e_ctimer_set(E_CTIMER_0, E_CTIMER_MAX);
-      for (i = 0; i < TIMES; i++)
+      for (int i = 0; i < TIMES; i++)
         __asm__("nop");
       e_ctimer_stop(E_CTIMER_0);
       nops = E_CTIMER_MAX - e_ctimer_get(E_CTIMER_0);
-      bmmi[core].ticks[tcore].t8 = (reads - nops) / (double) (TIMES);
-      
-      v8=v16;v16=v32;v32=v8;
+      bmmi[core].ticks[tcore].t8 = (writes - nops) / (double) (TIMES);
     }
   }
   bmmi[core].finished = E_TRUE;

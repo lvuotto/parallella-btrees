@@ -4,7 +4,9 @@ ELIBS = $(ESDK)/tools/host/lib
 EINCS = $(ESDK)/tools/host/include
 ELDF = $(ESDK)/bsps/current/internal.ldf
 BINS = benchmark tiempos 
-DEPS = e_write.srec e_read.srec e_write_asm.srec e_read_asm.srec
+DEPS = e_write.srec e_read.srec \
+       e_write_asm.srec e_read_asm.srec \
+       e_write_mem.srec e_read_mem.srec
 OBJS = e_write*.elf e_read*.elf e_tiempos.elf
 
 CC = gcc
@@ -31,6 +33,12 @@ e_write_asm.elf: e_write_asm.c bmmi.h
 	$(ECC) $(CFLAGS) $(EFLAGS) -O3 -T $(ELDF) -o $@ $< -le-lib
 
 e_read_asm.elf: e_read_asm.c bmmi.h
+	$(ECC) $(CFLAGS) $(EFLAGS) -O3 -T $(ELDF) -o $@ $< -le-lib
+
+e_write_mem.elf: e_write_mem.c bmmi.h
+	$(ECC) $(CFLAGS) $(EFLAGS) -O3 -T $(ELDF) -o $@ $< -le-lib
+
+e_read_mem.elf: e_read_mem.c bmmi.h
 	$(ECC) $(CFLAGS) $(EFLAGS) -O3 -T $(ELDF) -o $@ $< -le-lib
 
 

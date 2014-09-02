@@ -53,6 +53,31 @@ int main () {
   puts("----------------");
   benchmark(&platform, &device, "e_write_asm.srec", "e_read_asm.srec");
   
+  e_mem_t mem;
+  uint32_t a[1000];
+  for (uint32_t i = 0; i < 1000; i++)
+    a[i] = 0xdead0000 + i;
+  e_alloc(&mem, BMMI_ADDRESS + 0x1000, sizeof(a));
+  e_write(&mem, 0, 0, 0, a, sizeof(a));
+
+  uint16_t b[2000];
+  for (uint32_t i = 0; i < 2000; i++)
+    b[i] = i & 1 ? 0 : 0x1000 + i;
+  e_alloc(&mem, BMMI_ADDRESS + 0x2000, sizeof(b));
+  e_write(&mem, 0, 0, 0, b, sizeof(b));
+
+  uint32_t c[4000];
+  for (uint32_t i = 0; i < 4000; i++)
+    c[i] = i & 3 ? 0 : (0x40 + (i & 0xff)) & 0xff;
+  e_alloc(&mem, BMMI_ADDRESS + 0x3000, sizeof(c));
+  e_write(&mem, 0, 0, 0, c, sizeof(c));
+
+  puts("");
+  puts("Memoria directa");
+  puts("---------------");
+  benchmark(&platform, &device, "e_write_mem.srec", "e_read_mem.srec");
+  
+  e_free(&mem);
   e_close(&device);
   e_finalize();
 
@@ -105,6 +130,7 @@ void benchmark (e_platform_t *platform,
   }
 
   e_reset_group(device);
+  memset(&bmmi, 0, sizeof(bmmi));
   status = e_load(rdfn, device, 0, 0, E_TRUE);
 
   if (status != E_OK) {

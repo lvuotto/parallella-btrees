@@ -30,9 +30,9 @@ int main () {
     for (unsigned int tcol = 0; tcol < e_group_config.group_cols; tcol++) {
       tcore = trow*e_group_config.group_cols + tcol;
       /*if (tcore == core) continue;*/
-      uint32_t *d32 = e_get_global_address(trow, tcol, b32);
-      uint16_t *d16 = e_get_global_address(trow, tcol, b16);
-      uint8_t  *d8  = e_get_global_address(trow, tcol, b8 );
+      volatile uint32_t *d32 = e_get_global_address(trow, tcol, b32);
+      volatile uint16_t *d16 = e_get_global_address(trow, tcol, b16);
+      volatile uint8_t  *d8  = e_get_global_address(trow, tcol, b8 );
 
       e_ctimer_set(E_CTIMER_0, E_CTIMER_MAX);
       e_ctimer_start(E_CTIMER_0, E_CTIMER_CLK);

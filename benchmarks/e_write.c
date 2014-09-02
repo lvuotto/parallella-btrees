@@ -23,9 +23,9 @@ int main () {
   bmmi[core].coreid = coreid;
 
   unsigned int tcore, writes, nops;
-  uint32_t *d32 = (uint32_t *) 0x4000;
-  uint16_t *d16 = (uint16_t *) 0x4000;
-  uint8_t  *d8  = (uint8_t  *) 0x4000;
+  uint32_t *b32 = (uint32_t *) 0x4000;
+  uint16_t *b16 = (uint16_t *) 0x5000;
+  uint8_t  *b8  = (uint8_t  *) 0x6000;
   uint32_t v32;
   uint16_t v16;
   uint8_t  v8;
@@ -33,9 +33,9 @@ int main () {
     for (unsigned int tcol = 0; tcol < e_group_config.group_cols; tcol++) {
       tcore = trow*e_group_config.group_cols + tcol;
       /*if (tcore == core) continue;*/
-      d32 = e_get_global_address(trow, tcol, d32);
-      d16 = e_get_global_address(trow, tcol, d16);
-      d8  = e_get_global_address(trow, tcol, d8 );
+      uint32_t *d32 = e_get_global_address(trow, tcol, b32);
+      uint16_t *d16 = e_get_global_address(trow, tcol, b16);
+      uint8_t  *d8  = e_get_global_address(trow, tcol, b8 );
 
       v32 = 0x80000000 + (rand() & 0x7fffffff);
       v16 =     0x8000 + (rand() & 0x7fff);
