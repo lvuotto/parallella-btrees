@@ -8,7 +8,7 @@ OBJS=e_b-tree.elf b-tree.o
 CC=gcc
 ECC=e-gcc
 EOC=e-objcopy
-CFLAGS=-Wall -Wextra -Werror -O0 -ggdb -std=c99 -Wl,-rpath,$(ELIBS)
+CFLAGS=-Wall -Wextra -Werror -O2 -ggdb -std=gnu99 -Wl,-rpath,$(ELIBS)
 EFLAGS=-funroll-loops -ffast-math
 EOFLAGS=--srec-forceS3 --output-target srec
 

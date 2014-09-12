@@ -1,3 +1,5 @@
+#include "b-tree.h"
+
 #include "e-lib.h"
 #include <stdlib.h>
 
