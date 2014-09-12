@@ -6,7 +6,8 @@
 #include "btmi.h"
 
 
-#define BTMI_ADDRESS 0x8f000000
+#define B_TREE       0x90000000
+#define BTMI_ADDRESS 0x90001000
 
 
 /* ==========================================================================
@@ -28,11 +29,33 @@ int main()
   e_coords_from_coreid(coreid, &row, &col);
   core = row*e_group_config.group_cols + col;
 
-  volatile b_tree_msg_t *msg = (b_tree_msg_t *) BTMI_ADDRESS;
-  /* Implementar servidor */
+  volatile b_msg_t *msg = (b_msg_t *) BTMI_ADDRESS;
+  
+  /* Implementar "servidor". */
   while (E_TRUE) {
-    
+    if (msg[core].status == B_JOB_TO_DO) {
+      switch (msg[core].job) {
+      case B_INSERT:
+        msg[core].response.s = b_node_insert_nonfull((b_tree_t *) B_TREE);
+        msg[core].response.v = 0;
+        break;
+      case B_FIND:
+        msg[core].response.s = b_node_find((b_tree_t *) B_TREE,
+                                           &msg[core].response.v);
+        break;
+      default:
+        msg[core].response.s = B_UNRECOGNIZED;
+        msg[core].response.v = 0;
+        break;
+      }
+      msg[core].status = B_STAND_BY;
+    }
   }
+
+  /**
+   * TODO:
+   *  - Implementar con interrupciones y hacer mediciones.
+   **/
 
   return 0;
 }
@@ -44,10 +67,10 @@ int main()
 
 
 /**
- * Devuelve el nodo en el que se produjo la inserción. Útil para obtener
+ * Devuelve el nodo en el que se produjo la inserción.Úil para obtener
  * el nuevo padre en el momento en que se realiza el split.
  **/
-static b_node_t * b_node_add_nonfull(b_node_t **node, b_key_t key)
+static b_status_t b_node_add_nonfull(b_node_t **node, b_key_t key)
 {
   if (*node == NULL) {
     *node = b_node_new();
@@ -55,7 +78,7 @@ static b_node_t * b_node_add_nonfull(b_node_t **node, b_key_t key)
     (*node)->used_keys = 1;
   } else {
     /**
-     * Tengo que insertar en la posición `i`, pues esta función es llamada
+     * Tengo que insertar en la posición `i`, pues esta función es llama
      * sii `key` no pertenece al árbol.
      * Se mueven los hijos adelante, salvo por el último caso, pues o bien
      * esta inserción se produce sobre una hoja, o bien se produce por un
@@ -71,7 +94,7 @@ static b_node_t * b_node_add_nonfull(b_node_t **node, b_key_t key)
     (*node)->used_keys++;
   }
   
-  return *node;
+  return B_OK;
 }
 
 
@@ -148,22 +171,28 @@ static int b_node_index(const b_node_t *node, b_key_t key)
  * Devuelve un puntero al nodo* donde se encuentra `key`, o donde
  * habría que insertarlo.
  **/
-static b_node_t ** b_node_find(const b_tree_t *tree, b_key_t key)
+static b_status_t b_node_find(const b_tree_t *tree,
+                              b_key_t key,
+                              uint32_t *response)
 {
   assert(tree != NULL);
   
   b_node_t **n = (b_node_t **) tree;
+  b_status_t s = B_NOT_FOUND;
   while (*n != NULL) {
     int i = b_node_index(*n, key);
     if ((i == (*n)->used_keys || key != (*n)->keys[i]) &&
         (*n)->children[i] != NULL)
     {
-      n = & (*n)->children[i];
+      n = &(*n)->children[i];
     } else {
       /* match concreto ó fin de la "recursión". */
+      if (key == (*n)->used_keys[i])
+        s = B_OK;
       break;
     }
   }
-  
-  return n;
+
+  *response = (uint32_t) n;
+  return s;
 }

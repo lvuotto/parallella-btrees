@@ -27,10 +27,11 @@ struct b_tree_s {
 };
 
 
-b_tree_t * b_new     ();
-void       b_add     (b_tree_t *tree, b_key_t key);
-bool       b_find    (const b_tree_t *tree, b_key_t key);
-void       b_delete  (b_tree_t *tree);
+b_tree_t * b_new          ();
+void       b_add          (b_tree_t *tree, b_key_t key);
+void       b_add_parallel (b_tree_t *tree, b_key_t keys[], size_t n);
+bool       b_find         (const b_tree_t *tree, b_key_t key);
+void       b_delete       (b_tree_t *tree);
 
 
 /**

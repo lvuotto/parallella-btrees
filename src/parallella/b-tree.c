@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <assert.h>
+#include "e-lib.h"
 
 
 /* ==========================================================================
@@ -52,6 +53,12 @@ void b_add(b_tree_t *tree, b_key_t key)
   
   if (tree->root->parent != NULL)
     tree->root = tree->root->parent;
+}
+
+
+void b_add_parallel(b_tree_t *tree, b_key_t keys[], size_t n)
+{
+  
 }
 
 
