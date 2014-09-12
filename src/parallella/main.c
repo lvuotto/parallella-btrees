@@ -1,4 +1,5 @@
-
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <e-hal.h>
 #include "btmi.h"
@@ -12,7 +13,7 @@ int main () {
   e_platform_t platform;
   e_mem_t mem;
 
-  e_init(NULL);
+  e_init("b-tree.hdf");
   e_reset_system();
   e_get_platform_info(&platform);
   e_alloc(&mem, BTMI_ADDRESS, sizeof(btmi));
@@ -24,7 +25,16 @@ int main () {
   e_open(&device, 0, 0, platform.rows, platform.cols);
   e_write(&mem, 0, 0, 0, btmi, sizeof(btmi));
   e_reset_group(&device);
-  e_load_group("e_b-tree.srec", &device, 0, 0, platform.rows, platform.cols, E_TRUE);
+  int status = e_load_group("e_b-tree.srec",
+                            &device,
+                            0, 0,
+                            platform.rows, platform.cols,
+                            E_TRUE);
+
+  if (status != E_OK) {
+    fputs(stderr, "Hubo problemas cargando el ejecutable.");
+    exit(1);
+  }
 
   nano_wait(0, 10000000);
   
@@ -40,7 +50,7 @@ int main () {
                &btmi[core],
                sizeof(btmi[core]);
         nano_wait(0, 1000000);
-      } while (btmi[core].task == B_JOB_TO_DO);
+      } while (btmi[core].status == B_JOB_TO_DO);
     }
   }
   
@@ -50,4 +60,3 @@ int main () {
 
   return 0;
 }
-
