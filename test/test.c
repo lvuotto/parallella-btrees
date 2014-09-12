@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -15,18 +14,18 @@
 #define MSG_FAIL "El arbol tiene fallas de estructura."
 
 
-b_key_t min_key          (b_node_t *n);
-b_key_t max_key          (b_node_t *n);
-bool    esta_ordenado    (b_node_t *n);
-bool    respeta_rangos   (b_node_t *n);
-bool    checkear_nodo    (b_node_t *n);
-bool    test_invariantes (b_tree_t *t);
-bool    hijos_cumplen    (b_node_t *n);
+b_key_t min_key(b_node_t *n);
+b_key_t max_key(b_node_t *n);
+bool esta_ordenado(b_node_t *n);
+bool respeta_rangos(b_node_t *n);
+bool checkear_nodo(b_node_t *n);
+bool test_invariantes(b_tree_t *t);
+bool hijos_cumplen(b_node_t *n);
 
 int a[HEAVY_TEST];
 
-int main () {
-  
+int main()
+{
   b_tree_t *tree;
   int i, j, m, c;
   
@@ -62,14 +61,12 @@ int main () {
   b_delete(tree);
   
   return 0;
-  
 }
 
 
-b_key_t min_key (b_node_t *n) {
-  b_node_t *b;
-  
-  b = n;
+b_key_t min_key(b_node_t *n)
+{
+  b_node_t *b = n;
   while (b->children[0] != NULL) {
     b = b->children[0];
   }
@@ -78,10 +75,9 @@ b_key_t min_key (b_node_t *n) {
 }
 
 
-b_key_t max_key (b_node_t *n) {
-  b_node_t *b;
-  
-  b = n;
+b_key_t max_key(b_node_t *n)
+{
+  b_node_t *b = n;
   while (b->children[b->used_keys - 1] != NULL) {
     b = b->children[b->used_keys - 1];
   }
@@ -90,10 +86,9 @@ b_key_t max_key (b_node_t *n) {
 }
 
 
-bool esta_ordenado (b_node_t *n) {
-  bool r;
-  
-  r = true;
+bool esta_ordenado(b_node_t *n)
+{
+  bool r = true;
   if (n == NULL) return r;
   
   for (int i = 0; i < n->used_keys - 1 && r; i++)
@@ -106,10 +101,9 @@ bool esta_ordenado (b_node_t *n) {
 }
 
 
-bool respeta_rangos (b_node_t *n) {
-  bool r;
-  
-  r = true;
+bool respeta_rangos(b_node_t *n)
+{
+  bool r = true;
   if (n == NULL) return r;
   
   for (int i = 0; i < n->used_keys && r; i++) {
@@ -127,10 +121,9 @@ bool respeta_rangos (b_node_t *n) {
 }
 
 
-bool hijos_cumplen (b_node_t *n) {
-  bool r;
-  
-  r = true;
+bool hijos_cumplen(b_node_t *n)
+{
+  bool r = true;
   if (n == NULL) return r;
   
   for (int i = 0; i <= n->used_keys && r; i++)
@@ -144,12 +137,14 @@ bool hijos_cumplen (b_node_t *n) {
 }
 
 
-bool checkear_nodo (b_node_t *n) {
+bool checkear_nodo(b_node_t *n)
+{
   return esta_ordenado(n) && respeta_rangos(n) && hijos_cumplen(n);
 }
 
 
-bool test_invariantes (b_tree_t *t) {
+bool test_invariantes(b_tree_t *t)
+{
   return t == NULL ||
          t->root == NULL ||
          (t->root->parent == NULL && checkear_nodo(t->root));

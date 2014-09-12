@@ -1,19 +1,22 @@
+ESDK=$(EPIPHANY_HOME)
+ELIBS=$(ESDK)/tools/host/lib
+EINCS=$(ESDK)/tools/host/include
+ELDF=$(ESDK)/bsps/current/internal.ldf
+BINS=main e_b-tree.srec
+OBJS=e_b-tree.elf b-tree.o
 
-ESDK = $(EPIPHANY_HOME)
-ELIBS = $(ESDK)/tools/host/lib
-EINCS = $(ESDK)/tools/host/include
-ELDF = $(ESDK)/bsps/current/internal.ldf
-EXES = main e_b-tree.srec
-OBJS = e_b-tree.elf b-tree.o
+CC=gcc
+ECC=e-gcc
+EOC=e-objcopy
+CFLAGS=-Wall -Wextra -Werror -O0 -ggdb -std=c99 -Wl,-rpath,$(ELIBS)
+EFLAGS=-funroll-loops -ffast-math
+EOFLAGS=--srec-forceS3 --output-target srec
 
-CC = gcc
-ECC = e-gcc
-EOC = e-objcopy
-CFLAGS = -Wall -Wextra -Werror -O0 -ggdb -std=c99 -Wl,-rpath,$(ELIBS)
-EFLAGS = -funroll-loops -ffast-math
-EOFLAGS = --srec-forceS3 --output-target srec
 
-all: $(EXES)
+.PHONY: all clean
+
+
+all: $(BINS)
 
 main: main.c b-tree.o
 	$(CC) $(CFLAGS) -I$(EINCS) -L$(ELIBS) -o $@ $^ -le-hal -lrt
@@ -29,5 +32,4 @@ e_b-tree.srec: e_b-tree.elf
 
 
 clean:
-	rm -f $(EXES) $(OBJS)
-
+	rm -f $(BINS) $(OBJS)

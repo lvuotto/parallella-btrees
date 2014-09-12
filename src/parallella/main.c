@@ -9,7 +9,8 @@
 #define E_CORES 16
 
 
-int main () {
+int main()
+{
   e_platform_t platform;
   e_mem_t mem;
 

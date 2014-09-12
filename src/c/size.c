@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include "b-tree.h"
@@ -7,13 +6,13 @@
 #define MAX_TESTS (4 << 20)
 
 
-void   shuffle    (int *a, size_t n);
-size_t cant_nodos (const b_tree_t *t);
-size_t contar     (const b_node_t *n);
+void shuffle(int *a, size_t n);
+size_t cant_nodos(const b_tree_t *t);
+size_t contar(const b_node_t *n);
 
 
-int main () {
-  
+int main()
+{
   srand(176);
 
   printf("sizeof(b_tree_t) = %ub\n", sizeof(b_tree_t));
@@ -47,7 +46,8 @@ int main () {
 }
 
 
-void shuffle (int *a, size_t n) {
+void shuffle(int *a, size_t n)
+{
   int t;
   for (size_t i = 0, j; i < n; i++) {
     j = i + (rand() % (n - i));
@@ -58,17 +58,19 @@ void shuffle (int *a, size_t n) {
 }
 
 
-size_t cant_nodos (const b_tree_t *t) {
+size_t cant_nodos(const b_tree_t *t)
+{
   return contar(t->root);
 }
 
-size_t contar (const b_node_t *n) {
+size_t contar(const b_node_t *n)
+{
   if (n == NULL)
     return 0;
+  
   size_t r = 0;
   for (int i = 0; i <= n->used_keys; i++) {
     r += contar(n->children[i]);
   }
   return 1 + r;
 }
-

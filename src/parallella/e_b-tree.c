@@ -1,4 +1,3 @@
-
 #include "e-lib.h"
 #include <stdlib.h>
 
@@ -19,7 +18,8 @@ static int         b_node_index       (const b_node_t *node, b_key_t key);
 static b_node_t ** b_node_find        (const b_tree_t *tree, b_key_t key);
 
 
-int main () {
+int main()
+{
   e_coreid_t coreid = e_get_coreid();
   unsigned int row, col, core;
 
@@ -27,6 +27,7 @@ int main () {
   core = row*e_group_config.group_cols + col;
 
   volatile b_tree_msg_t *msg = (b_tree_msg_t *) BTMI_ADDRESS;
+  /* Implementar servidor */
   while (E_TRUE) {
     
   }
@@ -44,12 +45,12 @@ int main () {
  * Devuelve el nodo en el que se produjo la inserción. Útil para obtener
  * el nuevo padre en el momento en que se realiza el split.
  **/
-static b_node_t * b_node_add_nonfull (b_node_t **node, b_key_t key) {
+static b_node_t * b_node_add_nonfull(b_node_t **node, b_key_t key)
+{
   if (*node == NULL) {
     *node = b_node_new();
     (*node)->keys[0] = key;
     (*node)->used_keys = 1;
-    
   } else {
     /**
      * Tengo que insertar en la posición `i`, pues esta función es llamada
@@ -66,7 +67,6 @@ static b_node_t * b_node_add_nonfull (b_node_t **node, b_key_t key) {
     }
     (*node)->keys[i] = key;
     (*node)->used_keys++;
-    
   }
   
   return *node;
@@ -77,24 +77,27 @@ static b_node_t * b_node_add_nonfull (b_node_t **node, b_key_t key) {
  * Reemplaza la clave de `index` por `key`, reordenando las claves y los
  * hijos.
  **/
-static void b_node_replace (b_node_t *node, b_key_t key, int index) {
-  int j;
-  
+static void b_node_replace(b_node_t *node, b_key_t key, int index)
+{
   assert(0 <= index && index < node->used_keys);
   
+  int new;
   if (key < node->keys[index]) {
-    for (j = index; j > 0 && key < node->keys[j - 1]; j--) {
-      node->keys[j] = node->keys[j - 1];
-      node->children[j + 1] = node->children[j];
+    for (new = index; new > 0 && key < node->keys[new - 1]; new--) {
+      node->keys[new] = node->keys[new - 1];
+      node->children[new + 1] = node->children[new];
     }
   } else {
-    for (j = index; j < node->used_keys - 1 && key > node->keys[j + 1]; j++) {
-      node->keys[j] = node->keys[j + 1];
-      node->children[j] = node->children[j + 1];
+    for (new = index;
+         new < node->used_keys - 1 && key > node->keys[new + 1];
+         new++)
+    {
+      node->keys[new] = node->keys[new + 1];
+      node->children[new] = node->children[new + 1];
     }
   }
   
-  node->keys[j] = key;
+  node->keys[new] = key;
 }
 
 
@@ -105,29 +108,21 @@ static void b_node_replace (b_node_t *node, b_key_t key, int index) {
  *  - Hacer que la busqueda binaria funcione devuelve el índice de la máxima
  *    clave menor a `key` en caso de que esta no pertenezca al nodo.
  **/
-static int b_node_index (const b_node_t *node, b_key_t key) {
+static int b_node_index(const b_node_t *node, b_key_t key)
+{
 #ifndef B_BINARY_SEARCH
-  
-  int i;
-  
   assert(node != NULL);
   
-  /*if (node->used_keys == 0 || key < node->keys[0])
-    return -1;*/
-  
-  for (i = 0; i < node->used_keys && key > node->keys[i]; i++);
-  
+  int i;
+  for (i = 0; i < node->used_keys && key > node->keys[i]; i++) {}
   return i;
-  
 #else
-
-  int l, u, p;
-  
   assert(node != NULL);
   
   if (node->used_keys == 0 || key < node->keys[0])
     return -1;
   
+  int l, u, p;
   l = 0;
   u = node->used_keys - 1;
   while (l <= u) {
@@ -143,7 +138,6 @@ static int b_node_index (const b_node_t *node, b_key_t key) {
   }
   
   return u;
-  
 #endif
 }
 
@@ -152,15 +146,13 @@ static int b_node_index (const b_node_t *node, b_key_t key) {
  * Devuelve un puntero al nodo* donde se encuentra `key`, o donde
  * habría que insertarlo.
  **/
-static b_node_t ** b_node_find (const b_tree_t *tree, b_key_t key) {
-  b_node_t **n;
-  int i;
-  
+static b_node_t ** b_node_find(const b_tree_t *tree, b_key_t key)
+{
   assert(tree != NULL);
   
-  n = (b_node_t **) tree;
+  b_node_t **n = (b_node_t **) tree;
   while (*n != NULL) {
-    i = b_node_index(*n, key);
+    int i = b_node_index(*n, key);
     if ((i == (*n)->used_keys || key != (*n)->keys[i]) &&
         (*n)->children[i] != NULL)
     {
@@ -173,4 +165,3 @@ static b_node_t ** b_node_find (const b_tree_t *tree, b_key_t key) {
   
   return n;
 }
-

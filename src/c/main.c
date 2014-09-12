@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -10,14 +9,15 @@
 #define TAB_SIZE 4
 
 
-void print_node (b_node_t *node, int t) {
-  int i, j;
+void print_node(b_node_t *node, int t)
+{
   char tab[256];
   
-  for (j = 0; j < t; j++) {
+  for (int j = 0; j < t; j++) {
     tab[j] = ' ';
   }
   tab[t] = 0;
+  
   if (node != NULL) {
     printf("%s{", tab);
     if (node->children[0] == NULL) {
@@ -27,7 +27,7 @@ void print_node (b_node_t *node, int t) {
       print_node(node->children[0], t + TAB_SIZE);
       printf("%s}\n", tab);
     }
-    for (i = 0; i < node->used_keys; i++) {
+    for (int i = 0; i < node->used_keys; i++) {
       printf("%s'%d' [%d] [n %p] [p %p]\n%s{",
              tab,
              node->keys[i],
@@ -49,8 +49,8 @@ void print_node (b_node_t *node, int t) {
 }
 
 
-int main () {
-  
+int main()
+{
   b_tree_t tree;
   int a[HEAVY_TEST];
   int i, j, m, c;
@@ -88,6 +88,5 @@ int main () {
   
   /*b_delete(tree);*/
   
-  return 0;
-  
+  return 0;  
 }

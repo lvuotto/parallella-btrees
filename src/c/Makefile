@@ -1,13 +1,12 @@
+CC=gcc
+CFLAGS=-Wall -Wextra -Werror -pedantic -ggdb -O0 -std=c99
+BINS=main test size
+OBJS=b-tree.o
+OBJDIR=../../objs
+BINDIR=../../bin
 
-CC = gcc
-CFLAGS = -Wall -Wextra -Werror -pedantic -ggdb -O0 -std=c99
-BINS = main test size
-OBJS = b-tree.o
-OBJDIR = ../../objs
-BINDIR = ../../bin
 
-
-.PHONY: all clean
+.PHONY: all clean test
 
 main: main.c $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $< $(OBJDIR)/$(OBJS)

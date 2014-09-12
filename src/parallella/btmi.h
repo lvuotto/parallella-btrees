@@ -1,4 +1,3 @@
-
 #ifndef __BTMI_H__
 
 #define __BTMI_H__
@@ -33,4 +32,3 @@ struct b_tree_msg_s {
 
 
 #endif  /* __BTMI_H__ */
-
