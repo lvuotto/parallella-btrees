@@ -5,8 +5,20 @@
 #include "b-tree.h"
 
 
-#define HEAVY_TEST (1 << 20)
+#define TOTAL_KEYS (1 << 22)
 #define TAB_SIZE 4
+
+
+void shuffle(int *a, size_t n)
+{
+  int t;
+  for (size_t i = 0, j; i < n; i++) {
+    j = i + (rand() % (n - i));
+    t = a[j];
+    a[j] = a[i];
+    a[i] = t;
+  }
+}
 
 
 void print_node(b_node_t *node, int t)
@@ -51,42 +63,34 @@ void print_node(b_node_t *node, int t)
 
 int main()
 {
-  b_tree_t tree;
-  int a[HEAVY_TEST];
-  int i, j, m, c;
+  b_tree_t *tree;
   
-  c = time(NULL);
-  srand(time(NULL));
+  int seed = time(NULL);
+  srand(seed);
+  printf("seed=%d\n", seed);
   
-  printf("seed=%d\n", c);
+  tree = b_new();
   
-  /*tree = b_new();*/
-  
-  for (i = 0; i < HEAVY_TEST; i++) {
-    a[i] = i;
+  int *claves = (int *) malloc(sizeof(int) * TOTAL_KEYS);
+  for (int i = 0; i < TOTAL_KEYS; i++) {
+    claves[i] = i;
   }
-  j = HEAVY_TEST;
-  for (i = 0; i < HEAVY_TEST; i++) {
-    j = i + (rand() % (HEAVY_TEST - i));
-    m = a[j];
-    a[j] = a[i];
-    a[i] = m;
+  shuffle(claves, TOTAL_KEYS);
+
+  for (int i = 0; i < TOTAL_KEYS; i++) {
+    b_add(tree, claves[i]);
   }
   
-  for (i = 0; i < HEAVY_TEST; i++) {
-    b_add(&tree, a[i]);
+  int matches = 0;
+  for (int i = 0; i < TOTAL_KEYS; i++) {
+    if (b_find(tree, claves[i])) matches++; else break;
   }
   
-  c = 0;
-  for (i = 0; i < HEAVY_TEST; i++) {
-    m = b_find(&tree, a[i]);
-    if (!m) break;
-    else c++;
-  }
+  printf("%s [%d]\n",
+         matches == TOTAL_KEYS ? "estan todos!" : "fallo :'(",
+         matches);
   
-  printf("%s [%d]\n", m ? "estan todos!" : "fallo :'(", c);
-  
-  /*b_delete(tree);*/
+  b_delete(tree);
   
   return 0;  
 }

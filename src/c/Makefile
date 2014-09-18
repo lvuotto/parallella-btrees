@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-Wall -Wextra -Werror -pedantic -ggdb -O0 -std=c99
-BINS=main test size
+BINS=main
 OBJS=b-tree.o
 OBJDIR=../../objs
 BINDIR=../../bin
@@ -12,19 +12,11 @@ main: main.c $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $< $(OBJDIR)/$(OBJS)
 	mv $@ $(BINDIR)
 
-all: $(BINS)
-
-test: test.c $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $< $(OBJDIR)/$(OBJS)
-	mv $@ $(BINDIR)
-
-size: size.c $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $< $(OBJDIR)/$(OBJS)
-	mv $@ $(BINDIR)
-
 %.o: %.c %.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 	mv $@ $(OBJDIR)
+
+all: $(BINS)
 
 clean:
 	rm -f $(OBJDIR)/$(OBJS)

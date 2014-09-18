@@ -219,9 +219,9 @@ static b_node_t * b_node_add_full(b_node_t **node, b_key_t key)
   }
   
   b_node_t *backup = *node;
-  for (j = 0; j <= new_child->used_keys; j++) {
-    if (new_child->children[j] != NULL)
-      new_child->children[j]->parent = new_child;
+  for (int i = 0; i <= new_child->used_keys; i++) {
+    if (new_child->children[i] != NULL)
+      new_child->children[i]->parent = new_child;
   }
   *node = backup;
   
