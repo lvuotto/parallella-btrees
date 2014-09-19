@@ -6,8 +6,6 @@
 #include <stdint.h>
 
 
-typedef enum   b_status_e   b_status_t;
-typedef enum   b_job_e      b b_job_t;
 typedef struct b_response_s b_response_t;
 typedef struct b_msg_s      b_msg_t;
 
@@ -26,14 +24,23 @@ enum b_job_e {
   B_FIND
 };
 
+
+typedef enum   b_status_e   b_status_t;
+typedef enum   b_job_e      b_job_t;
+
+
 struct b_response_s {
   b_status_t   s;
   uint32_t     v;
 } __attribute__((packed, aligned(4)));
 
+/**
+ * Arreglar para usar `b_key_t`.
+ **/
 struct b_msg_s {
   b_status_t   status;
   b_job_t      job;
+  int          param;
   b_response_t response;
 } __attribute__((packed, aligned(4)));
 

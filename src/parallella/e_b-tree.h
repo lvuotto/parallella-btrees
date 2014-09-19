@@ -4,7 +4,6 @@
 
 
 #include <stdbool.h>
-#include "btmi.h"
 
 
 #ifndef B_MAX_KEYS

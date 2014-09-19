@@ -3,13 +3,15 @@ ELIBS=$(ESDK)/tools/host/lib
 EINCS=$(ESDK)/tools/host/include
 ELDF=$(ESDK)/bsps/current/internal.ldf
 BINS=main e_b-tree.srec
-OBJS=e_b-tree.elf b-tree.o
+OBJS=e_b-tree.elf b-tree.o queue.o
 
 CC=gcc
 ECC=e-gcc
 EOC=e-objcopy
-CFLAGS=-Wall -Wextra -Werror -O2 -ggdb -std=gnu99 -Wl,-rpath,$(ELIBS)
-EFLAGS=-funroll-loops -ffast-math
+CFLAGS=-Wall -Wextra -pedantic -O0 -ggdb -std=gnu99
+#CFLAGS=-Wall -Wextra -Werror -pedantic -O0 -ggdb -std=gnu99
+CLFLAGS=-Wl,-rpath,$(ELIBS)
+EFLAGS=-funroll-loops -ffast-math -O0
 EOFLAGS=--srec-forceS3 --output-target srec
 
 
@@ -18,14 +20,17 @@ EOFLAGS=--srec-forceS3 --output-target srec
 
 all: $(BINS)
 
-main: main.c b-tree.o
-	$(CC) $(CFLAGS) -I$(EINCS) -L$(ELIBS) -o $@ $^ -le-hal -lrt
+main: main.c b-tree.o queue.o
+	$(CC) $(CFLAGS) $(CLFLAGS) -I$(EINCS) -L$(ELIBS) -o $@ $^ -le-hal -lrt
 
-b-tree.o: b-tree.c b-tree.h
+b-tree.o: b-tree.c b-tree.h btmi.h
+	$(CC) $(CFLAGS) $(CLFLAGS) -I$(EINCS) -L$(ELIBS) -c -o $@ $<
+
+queue.o: queue.c queue.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-e_b-tree.elf: e_b-tree.c b-tree.h
-	$(ECC) $(CFLAGS) $(EFLAGS) -O3 -T $(ELDF) -o $@ $< -le-lib
+e_b-tree.elf: e_b-tree.c e_b-tree.h
+	$(ECC) $(CFLAGS) $(CLFLAGS) $(EFLAGS) -T$(ELDF) -o $@ $< -le-lib
 
 e_b-tree.srec: e_b-tree.elf
 	$(EOC) $(EOFLAGS) $^ $@
