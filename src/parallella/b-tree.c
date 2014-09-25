@@ -5,12 +5,6 @@
 #include "nano-wait.h"
 
 
-#include <stdio.h>
-#define log(s) fputs(s "\n", stderr)
-#define logf(f, ...) fprintf(stderr, f, ##__VA_ARGS__)
-
-
-
 /* ======================================================================
  * PROTOTIPOS
  * ====================================================================== */

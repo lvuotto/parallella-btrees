@@ -8,15 +8,19 @@
 #include "b-tree.h"
 #include "queue.h"
 
+
+#define DRAM_SIZE    0x02000000 /* 32MB */
 #define BTMI_ADDRESS 0x01000000
 #define B_TREE       0x01001000
 #define E_CORES              16
 
-#define log(s) fputs(s "\n", stderr)
+#define log(s)         fputs(s "\n", stderr)
+#define logf(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)
 
 
 void share(const b_tree_t *tree, e_mem_t *mem);
 b_status_t * b_find_parallel(e_platform_t *platform,
+                             e_epiphany_t *device,
                              e_mem_t *mem,
                              b_msg_t *msg,
                              /*b_tree_t *tree,*/
@@ -25,6 +29,8 @@ b_status_t * b_find_parallel(e_platform_t *platform,
 
 int main()
 {
+  e_set_host_verbosity(H_D1);
+
   e_platform_t platform;
 
   if (e_init(NULL) != E_OK) {
@@ -33,31 +39,28 @@ int main()
   }
   e_reset_system();
   e_get_platform_info(&platform);
-  
+
   e_mem_t mem, tree_mem;
   static b_msg_t btmi[16];
   memset(btmi, 0, sizeof(btmi));
   e_alloc(&mem, BTMI_ADDRESS, sizeof(btmi));
-  /*e_alloc(&tree_mem, B_TREE, 0x1000000);*/
-
+  e_alloc(&tree_mem, B_TREE, DRAM_SIZE - B_TREE);
+  
   e_epiphany_t device;
   e_open(&device, 0, 0, platform.rows, platform.cols);
-  e_write(&mem, 0, 0, 0, btmi, sizeof(btmi));
+  /*e_write(&mem, 0, 0, 0, btmi, sizeof(btmi));*/
   e_reset_group(&device);
-  /*int status = e_load_group("e_b-tree.srec",
+  int status = e_load_group("e_b-tree.srec",
                             &device,
                             0, 0,
                             platform.rows, platform.cols,
-                            E_TRUE);*/
-  int status = e_load("e_b-tree.srec", &device, 0, 0, E_TRUE);
+                            E_FALSE);
 
   if (status != E_OK) {
     log("Hubo problemas cargando el ejecutable.");
     exit(1);
   }
 
-  nano_wait(0, 10000000);
- 
   /* COMIENZO busqueda en paralelo */
   b_tree_t *tree;
   tree = b_new();
@@ -67,10 +70,9 @@ int main()
     b_add(tree, a[i]);
   }
   /*share(tree, &tree_mem);*/
-  /*b_status_t *response = b_find_parallel(&platform, &mem, btmi, tree, a);*/
-  
+
   log("Realizando la busqueda...");
-  b_status_t *response = b_find_parallel(&platform, &mem, btmi, a);
+  b_status_t *response = b_find_parallel(&platform, &device, &mem, btmi, a);
   log("Busqueda completada.");
   for (int i = 0; i < 16; i++) {
     printf("%d: %d\n", a[i], response[i]);
@@ -78,24 +80,7 @@ int main()
   free(response);
   b_delete(tree);
   /* FIN busqueda en paralelo */
-  
 
-  /*unsigned int core;
-  for (unsigned int row = 0; row < platform.rows; row++) {
-    for (unsigned int col = 0; col < platform.cols; col++) {
-      core = row*platform.cols + col;
-      do {
-        e_read(&mem,
-               0,
-               0,
-               (off_t) ((char *) &btmi[core] - (char *) btmi),
-               &btmi[core],
-               sizeof(btmi[core]));
-        nano_wait(0, 1000000);
-      } while (btmi[core].status == B_JOB_TO_DO);
-    }
-  }*/
-  
   e_close(&device);
   e_free(&tree_mem);
   e_free(&mem);
@@ -107,10 +92,13 @@ int main()
 
 void share(const b_tree_t *tree, e_mem_t *mem)
 {
+  if (tree->root == NULL)
+    return;
+
   queue *q = queue_new();
   enqueue(q, tree->root);
-  
-  off_t pos = B_TREE;
+
+  off_t pos = 0;
   while (!empty(q)) {
     b_node_t *n = dequeue(q);
     for (int i = 0; i <= n->used_keys; i++) {
@@ -133,6 +121,7 @@ void share(const b_tree_t *tree, e_mem_t *mem)
  *  - Ver algo sobre si el árbol está o no en memoria.
  **/
 b_status_t * b_find_parallel(e_platform_t *platform,
+                             e_epiphany_t *device,
                              e_mem_t *mem,
                              b_msg_t *msg,
                              /*b_tree_t *tree,*/
@@ -142,12 +131,14 @@ b_status_t * b_find_parallel(e_platform_t *platform,
   for (unsigned int row = 0; row < platform->rows; row++) {
     for (unsigned int col = 0; col < platform->cols; col++) {
       unsigned int core = row * platform->cols + col;
-      /*msg[core].job = B_FIND;*/
+      msg[core].job = B_FIND;
       msg[core].status = B_JOB_TO_DO;
-      /*msg[core].param = keys[core];*/
+      msg[core].param = keys[core];
     }
   }
   e_write(mem, 0, 0, 0, msg, 16 * sizeof(b_msg_t));
+  nano_wait(0, 10000000); /* 10ms */
+  e_start_group(device);
 
   for (unsigned int row = 0; row < platform->rows; row++) {
     for (unsigned int col = 0; col < platform->cols; col++) {
@@ -160,7 +151,7 @@ b_status_t * b_find_parallel(e_platform_t *platform,
           log("error en `e_read`.");
           exit(1);
         }
-        nano_wait(0, 1000000);
+        nano_wait(0, 100000000); /* 100ms */
         logf("%u %u %u %u %u\n",
              msg[core].status,
              msg[core].job,
