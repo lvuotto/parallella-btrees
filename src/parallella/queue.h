@@ -14,8 +14,8 @@ typedef struct queue_      queue;
 typedef struct queue_node_ queue_node;
 
 struct queue_ {
-  queue_node *top;
-  queue_node *last;
+  queue_node *front_;
+  queue_node *back_;
 };
 
 struct queue_node_ {
@@ -31,9 +31,15 @@ void * dequeue(queue *q);
 void queue_delete(queue *q);
 
 
-inline void * top(const queue *q)
+inline void * front(const queue *q)
 {
-  return q->top->value;
+  return q->front_->value;
+}
+
+
+inline void * back(const queue *q)
+{
+  return q->back_->value;
 }
 
 

@@ -8,8 +8,8 @@ static queue_node * queue_node_new();
 queue * queue_new()
 {
   queue *q = (queue *) malloc(sizeof(queue));
-  q->top = NULL;
-  q->last = NULL;
+  q->front_ = NULL;
+  q->back_ = NULL;
   
   return q;
 }
@@ -17,7 +17,7 @@ queue * queue_new()
 
 bool empty(const queue *q)
 {
-  return q->top == NULL;
+  return q->front_ == NULL;
 }
 
 
@@ -26,11 +26,11 @@ queue * enqueue(queue *q, void *v)
   queue_node *n = queue_node_new();
   n->value = v;
   if (empty(q)) {
-    q->top = n;
-    q->last = n;
+    q->front_ = n;
+    q->back_ = n;
   } else {
-    q->last->next = n;
-    q->last = n;
+    q->back_->next = n;
+    q->back_ = n;
   }
 
   return q;
@@ -39,8 +39,8 @@ queue * enqueue(queue *q, void *v)
 
 void * dequeue(queue *q)
 {
-  queue_node *n = q->top;
-  q->top = n->next;
+  queue_node *n = q->front_;
+  q->front_ = n->next;
   void *v = n->value;
   free(n);
 
@@ -50,7 +50,7 @@ void * dequeue(queue *q)
 
 void queue_delete(queue *q)
 {
-  queue_node *n = q->top;
+  queue_node *n = q->front_;
   while (n != NULL) {
     queue_node *t = n->next;
     free(n);
