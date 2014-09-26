@@ -14,8 +14,15 @@
 #define B_TREE       0x01001000
 #define E_CORES              16
 
+#define W_1ms           1000000
+#define W_10ms         10000000
+#define W_100ms       100000000
+
 #define log(s)         fputs(s "\n", stderr)
 #define logf(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)
+
+
+#define E_DBG_ON 1
 
 
 void share(const b_tree_t *tree, e_mem_t *mem);
@@ -29,7 +36,10 @@ b_status_t * b_find_parallel(e_platform_t *platform,
 
 int main()
 {
+#ifdef E_DBG_ON
   e_set_host_verbosity(H_D1);
+  e_set_loader_verbosity(L_D1);
+#endif
 
   e_platform_t platform;
 
@@ -43,12 +53,17 @@ int main()
   e_mem_t mem, tree_mem;
   static b_msg_t btmi[16];
   memset(btmi, 0, sizeof(btmi));
-  e_alloc(&mem, BTMI_ADDRESS, sizeof(btmi));
-  e_alloc(&tree_mem, B_TREE, DRAM_SIZE - B_TREE);
+  if (e_alloc(&mem, BTMI_ADDRESS, DRAM_SIZE - BTMI_ADDRESS) != E_OK) {
+    log("error al alocar (msjs)");
+    exit(1);
+  }
+  /*if (e_alloc(&tree_mem, B_TREE, DRAM_SIZE - B_TREE) != E_OK) {
+    log("error al alocar (arbol)");
+    exit(1);
+  }*/
   
   e_epiphany_t device;
   e_open(&device, 0, 0, platform.rows, platform.cols);
-  /*e_write(&mem, 0, 0, 0, btmi, sizeof(btmi));*/
   e_reset_group(&device);
   int status = e_load_group("e_b-tree.srec",
                             &device,
@@ -69,7 +84,7 @@ int main()
     a[i] = i + 1;
     b_add(tree, a[i]);
   }
-  /*share(tree, &tree_mem);*/
+  share(tree, &mem);
 
   log("Realizando la busqueda...");
   b_status_t *response = b_find_parallel(&platform, &device, &mem, btmi, a);
@@ -92,13 +107,17 @@ int main()
 
 void share(const b_tree_t *tree, e_mem_t *mem)
 {
+#ifdef E_DBG_ON
+  e_set_host_verbosity(H_D4);
+#endif
+
   if (tree->root == NULL)
     return;
 
   queue *q = queue_new();
   enqueue(q, tree->root);
 
-  off_t pos = 0;
+  off_t pos = 0x1000;
   while (!empty(q)) {
     b_node_t *n = dequeue(q);
     for (int i = 0; i <= n->used_keys; i++) {
@@ -111,6 +130,10 @@ void share(const b_tree_t *tree, e_mem_t *mem)
   }
 
   queue_delete(q);
+
+#ifdef E_DBG_ON
+  e_set_host_verbosity(H_D1);
+#endif
 }
 
 
@@ -137,7 +160,7 @@ b_status_t * b_find_parallel(e_platform_t *platform,
     }
   }
   e_write(mem, 0, 0, 0, msg, 16 * sizeof(b_msg_t));
-  nano_wait(0, 10000000); /* 10ms */
+  nano_wait(0, W_10ms);
   e_start_group(device);
 
   for (unsigned int row = 0; row < platform->rows; row++) {
@@ -151,7 +174,7 @@ b_status_t * b_find_parallel(e_platform_t *platform,
           log("error en `e_read`.");
           exit(1);
         }
-        nano_wait(0, 100000000); /* 100ms */
+        nano_wait(0, W_100ms);
         logf("%u %u %u %u %u\n",
              msg[core].status,
              msg[core].job,
@@ -159,7 +182,6 @@ b_status_t * b_find_parallel(e_platform_t *platform,
              msg[core].response.s,
              msg[core].response.v);
       } while (msg[core].status == B_JOB_TO_DO);
-      log("");
       response[core] = msg[core].response.s;
     }
   }

@@ -17,7 +17,7 @@ static b_status_t b_node_add_nonfull(b_node_t **node, b_key_t key);
 static int b_node_index(const b_node_t *node, b_key_t key);
 static b_node_t ** b_node_find(const b_tree_t *tree,
                                b_key_t key,
-                               volatile b_status_t *v);
+                               volatile b_status_t *s);
 
 
 int main()
@@ -51,11 +51,11 @@ int main()
     }
   }
 
-  /*msg[core].status     = 0xdead;
-  msg[core].job        = 0xdead;
-  msg[core].param      = 0xdead;
-  msg[core].response.s = 0xdead;
-  msg[core].response.v = 0xdead;*/
+  /*msg[core].status     += 100;
+  msg[core].job        += 100;
+  msg[core].param      += 100;
+  msg[core].response.s += 100;
+  msg[core].response.v += 100;*/
 
   /**
    * TODO:
@@ -156,7 +156,9 @@ static b_node_t ** b_node_find(const b_tree_t *tree,
   b_node_t **n = (b_node_t **) tree;
   *s = E_FALSE;
   while (*n != NULL) {
+    (*s)++;
     int i = b_node_index(*n, key);
+    (*s)++;
     if ((i == (*n)->used_keys || key != (*n)->keys[i]) &&
         (*n)->children[i] != NULL)
     {
