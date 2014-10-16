@@ -1,5 +1,6 @@
 #include "queue.h"
 #include <stdlib.h>
+#include <assert.h>
 
 
 static queue_node * queue_node_new();
@@ -39,6 +40,8 @@ queue * enqueue(queue *q, void *v)
 
 void * dequeue(queue *q)
 {
+  assert(q->front_ != NULL);
+
   queue_node *n = q->front_;
   q->front_ = n->next;
   void *v = n->value;
