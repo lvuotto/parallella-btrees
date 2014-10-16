@@ -18,11 +18,15 @@
 #define W_10ms         10000000
 #define W_100ms       100000000
 
+#define TEST_SIZE            16
+
 #define log(s)         fputs(s "\n", stderr)
 #define logf(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)
 
 
-#define E_DBG_ON 1
+#ifndef E_DBG_ON
+# define E_DBG_ON 1
+#endif
 
 
 void share(const b_tree_t *tree, e_mem_t *mem);
@@ -79,18 +83,19 @@ int main()
   /* COMIENZO busqueda en paralelo */
   b_tree_t *tree;
   tree = b_new();
-  int a[16];
-  for (int i = 0; i < 16; i++) {
+  int a[TEST_SIZE], b[TEST_SIZE];
+  for (int i = 0; i < TEST_SIZE; i++) {
     a[i] = i + 1;
+    b[i] = i + 1 + TEST_SIZE*(i==0);
     b_add(tree, a[i]);
   }
   share(tree, &mem);
 
   log("Realizando la busqueda...");
-  b_status_t *response = b_find_parallel(&platform, &device, &mem, btmi, a);
+  b_status_t *response = b_find_parallel(&platform, &device, &mem, btmi, b);
   log("Busqueda completada.");
-  for (int i = 0; i < 16; i++) {
-    printf("%d: %d\n", a[i], response[i]);
+  for (int i = 0; i < TEST_SIZE; i++) {
+    printf("%d: %p\n", b[i], (void *) response[i]);
   }
   free(response);
   b_delete(tree);
@@ -110,23 +115,36 @@ void share(const b_tree_t *tree, e_mem_t *mem)
 #ifdef E_DBG_ON
   e_set_host_verbosity(H_D4);
 #endif
+  
+  off_t pos = 0x1000;
+  b_tree_t ct = *tree;
+  ct.root = (b_node_t *) (mem->ephy_base + pos + sizeof(ct.root));
+  e_write(mem, 0, 0, pos, &ct, sizeof(ct));
+  pos += sizeof(ct);
 
   if (tree->root == NULL)
     return;
 
+  /**
+   * Se debe compactificar el árbol en el área de memoria compartida.
+   * `cn` es el nodo a escribir con los punteros arreglados para mantener
+   * coherencia.
+   **/
   queue *q = queue_new();
   enqueue(q, tree->root);
-
-  off_t pos = 0x1000;
   while (!empty(q)) {
     b_node_t *n = dequeue(q);
+    b_node_t cn = *n;
     for (int i = 0; i <= n->used_keys; i++) {
       if (n->children[i] != NULL) {
         enqueue(q, n->children[i]);
+        cn.children[i] = (b_node_t *) (mem->ephy_base +
+                                       pos +
+                                       i * sizeof(b_node_t));
       }
     }
-    e_write(mem, 0, 0, pos, n, sizeof(b_node_t));
-    pos += sizeof(b_node_t);
+    e_write(mem, 0, 0, pos, &cn, sizeof(cn));
+    pos += sizeof(cn);
   }
 
   queue_delete(q);
@@ -174,12 +192,12 @@ b_status_t * b_find_parallel(e_platform_t *platform,
           log("error en `e_read`.");
           exit(1);
         }
-        nano_wait(0, W_100ms);
-        logf("%u %u %u %u %u\n",
+        nano_wait(0, W_1ms);
+        logf("%u %u %u %p %u\n",
              msg[core].status,
              msg[core].job,
              msg[core].param,
-             msg[core].response.s,
+             (void *) msg[core].response.s,
              msg[core].response.v);
       } while (msg[core].status == B_JOB_TO_DO);
       response[core] = msg[core].response.s;

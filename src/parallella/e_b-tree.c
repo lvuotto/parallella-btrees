@@ -48,6 +48,7 @@ int main()
         break;
       }
       msg[core].status = B_STAND_BY;
+      break;
     }
   }
 
@@ -156,17 +157,14 @@ static b_node_t ** b_node_find(const b_tree_t *tree,
   b_node_t **n = (b_node_t **) tree;
   *s = E_FALSE;
   while (*n != NULL) {
-    (*s)++;
     int i = b_node_index(*n, key);
-    (*s)++;
     if ((i == (*n)->used_keys || key != (*n)->keys[i]) &&
         (*n)->children[i] != NULL)
     {
       n = &(*n)->children[i];
     } else {
       /* match concreto ó fin de la "recursión". */
-      if (i < (*n)->used_keys && key == (*n)->keys[i])
-        *s = E_TRUE;
+      *s = i < (*n)->used_keys && key == (*n)->keys[i] ? (unsigned int)*n:0;
       break;
     }
   }
