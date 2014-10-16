@@ -16,23 +16,15 @@ queue * queue_new()
 }
 
 
-bool empty(const queue *q)
-{
-  return q->front_ == NULL;
-}
-
-
 queue * enqueue(queue *q, void *v)
 {
   queue_node *n = queue_node_new();
   n->value = v;
-  if (empty(q)) {
+  if (queue_empty(q))
     q->front_ = n;
-    q->back_ = n;
-  } else {
+  else
     q->back_->next = n;
-    q->back_ = n;
-  }
+  q->back_ = n;
 
   return q;
 }
@@ -40,7 +32,7 @@ queue * enqueue(queue *q, void *v)
 
 void * dequeue(queue *q)
 {
-  assert(q->front_ != NULL);
+  assert(!queue_empty(q));
 
   queue_node *n = q->front_;
   q->front_ = n->next;

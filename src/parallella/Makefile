@@ -26,9 +26,6 @@ main: main.c b-tree.o queue.o
 b-tree.o: b-tree.c b-tree.h btmi.h
 	$(CC) $(CFLAGS) $(CLFLAGS) -I$(EINCS) -L$(ELIBS) -c -o $@ $<
 
-queue.o: queue.c queue.h
-	$(CC) $(CFLAGS) -c -o $@ $<
-
 e_b-tree.elf: e_b-tree.c e_b-tree.h
 	$(ECC) $(CFLAGS) $(CLFLAGS) $(EFLAGS) -T$(ELDF) -o $@ $< -le-lib
 

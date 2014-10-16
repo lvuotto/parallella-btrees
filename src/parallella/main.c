@@ -132,7 +132,7 @@ void share(const b_tree_t *tree, e_mem_t *mem)
    **/
   queue *q = queue_new();
   enqueue(q, tree->root);
-  while (!empty(q)) {
+  while (!queue_empty(q)) {
     b_node_t *n = dequeue(q);
     b_node_t cn = *n;
     for (int i = 0; i <= n->used_keys; i++) {
