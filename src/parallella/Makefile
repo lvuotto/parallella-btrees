@@ -9,7 +9,6 @@ CC=gcc
 ECC=e-gcc
 EOC=e-objcopy
 CFLAGS=-Wall -Wextra -pedantic -O0 -ggdb -std=gnu99
-#CFLAGS=-Wall -Wextra -Werror -pedantic -O0 -ggdb -std=gnu99
 CLFLAGS=-Wl,-rpath,$(ELIBS)
 EFLAGS=-funroll-loops -ffast-math -O0
 EOFLAGS=--srec-forceS3 --output-target srec

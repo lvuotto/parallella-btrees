@@ -18,7 +18,7 @@
 #define W_10ms         10000000
 #define W_100ms       100000000
 
-#define TEST_SIZE            16
+#define TEST_SIZE            17
 
 #define log(s)         fputs(s "\n", stderr)
 #define logf(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)
@@ -30,6 +30,7 @@
 
 
 void share(const b_tree_t *tree, e_mem_t *mem);
+b_node_t * e_share(e_mem_t *mem, off_t *pos, b_node_t *n, b_node_t *parent);
 b_status_t * b_find_parallel(e_platform_t *platform,
                              e_epiphany_t *device,
                              e_mem_t *mem,
@@ -83,18 +84,23 @@ int main()
   /* COMIENZO busqueda en paralelo */
   b_tree_t *tree;
   tree = b_new();
-  int a[TEST_SIZE], b[TEST_SIZE];
+  int b[E_CORES];
   for (int i = 0; i < TEST_SIZE; i++) {
-    a[i] = i + 1;
-    b[i] = i + 1 + TEST_SIZE*(i==0);
-    b_add(tree, a[i]);
+    b_add(tree, i+1);
   }
+  for (int i = 0; i < E_CORES; i++) b[i] = 1 + i * (TEST_SIZE / E_CORES);
   share(tree, &mem);
+  unsigned char *memoria = (unsigned char *) malloc(DRAM_SIZE - B_TREE);
+  
+  e_set_host_verbosity(H_D4);
+  e_read(&mem, 0, 0, 0x1000, memoria, DRAM_SIZE - B_TREE);
+  e_set_host_verbosity(H_D1);
+  printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA!!!\n");
 
   log("Realizando la busqueda...");
   b_status_t *response = b_find_parallel(&platform, &device, &mem, btmi, b);
   log("Busqueda completada.");
-  for (int i = 0; i < TEST_SIZE; i++) {
+  for (int i = 0; i < E_CORES; i++) {
     printf("%d: %p\n", b[i], (void *) response[i]);
   }
   free(response);
@@ -116,42 +122,46 @@ void share(const b_tree_t *tree, e_mem_t *mem)
   e_set_host_verbosity(H_D4);
 #endif
   
-  off_t pos = 0x1000;
-  b_tree_t ct = *tree;
-  ct.root = (b_node_t *) (mem->ephy_base + pos + sizeof(ct.root));
-  e_write(mem, 0, 0, pos, &ct, sizeof(ct));
-  pos += sizeof(ct);
-
-  if (tree->root == NULL)
-    return;
-
+  /**
+   * TODO:
+   *  - Ver de reprogramar el árbol de modo de que no haya que compartirlo
+   *    al epiphany antes de usarlo, sino que se comparta cada vez que se
+   *    hace un cambio.
+   **/
   /**
    * Se debe compactificar el árbol en el área de memoria compartida.
    * `cn` es el nodo a escribir con los punteros arreglados para mantener
    * coherencia.
    **/
-  queue *q = queue_new();
-  enqueue(q, tree->root);
-  while (!queue_empty(q)) {
-    b_node_t *n = dequeue(q);
-    b_node_t cn = *n;
-    for (int i = 0; i <= n->used_keys; i++) {
-      if (n->children[i] != NULL) {
-        enqueue(q, n->children[i]);
-        cn.children[i] = (b_node_t *) (mem->ephy_base +
-                                       pos +
-                                       i * sizeof(b_node_t));
-      }
-    }
-    e_write(mem, 0, 0, pos, &cn, sizeof(cn));
-    pos += sizeof(cn);
-  }
-
-  queue_delete(q);
+  
+  off_t pos = 0x1000 + sizeof(*tree);
+  b_tree_t c = *tree;
+  c.root = e_share(mem, &pos, tree->root, NULL);
+  e_write(mem, 0, 0, 0x1000, &c, sizeof(c));
 
 #ifdef E_DBG_ON
   e_set_host_verbosity(H_D1);
 #endif
+}
+
+
+b_node_t * e_share(e_mem_t *mem, off_t *pos, b_node_t *n, b_node_t *parent)
+{
+  b_node_t clone = *n;
+  clone.parent = parent;
+  e_write(mem, 0, 0, *pos, &clone, sizeof(clone));
+  off_t old_pos = *pos;
+  b_node_t *actual = (b_node_t *) (mem->ephy_base + old_pos);
+  *pos += sizeof(clone);
+  for (int i = 0; i <= n->used_keys && n->children[i] != NULL; i++) {
+    size_t c = (size_t) e_share(mem, pos, n->children[i], actual);
+    e_write(mem,
+            0, 0,
+            old_pos + B_CHILDREN_OFFSET + i * sizeof(b_node_t *),
+            &c, sizeof(c));
+  }
+  
+  return actual;
 }
 
 
@@ -193,12 +203,12 @@ b_status_t * b_find_parallel(e_platform_t *platform,
           exit(1);
         }
         nano_wait(0, W_1ms);
-        logf("%u %u %u %p %u\n",
+        logf("%u %u %u %p %p\n",
              msg[core].status,
              msg[core].job,
              msg[core].param,
              (void *) msg[core].response.s,
-             msg[core].response.v);
+             (void *) msg[core].response.v);
       } while (msg[core].status == B_JOB_TO_DO);
       response[core] = msg[core].response.s;
     }

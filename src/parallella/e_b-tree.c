@@ -17,7 +17,7 @@ static b_status_t b_node_add_nonfull(b_node_t **node, b_key_t key);
 static int b_node_index(const b_node_t *node, b_key_t key);
 static b_node_t ** b_node_find(const b_tree_t *tree,
                                b_key_t key,
-                               volatile b_status_t *s);
+                               volatile b_msg_t *s);
 
 
 int main()
@@ -40,7 +40,7 @@ int main()
       case B_FIND:
         b_node_find((b_tree_t *) B_TREE,
                     msg[core].param,
-                    &msg[core].response.s);
+                    &msg[core]);
         break;
       default:
         msg[core].response.s = B_UNRECOGNIZED;
@@ -152,10 +152,9 @@ static int b_node_index(const b_node_t *node, b_key_t key)
  **/
 static b_node_t ** b_node_find(const b_tree_t *tree,
                                b_key_t key,
-                               volatile b_status_t *s)
+                               volatile b_msg_t *m)
 {
   b_node_t **n = (b_node_t **) tree;
-  *s = E_FALSE;
   while (*n != NULL) {
     int i = b_node_index(*n, key);
     if ((i == (*n)->used_keys || key != (*n)->keys[i]) &&
@@ -164,7 +163,10 @@ static b_node_t ** b_node_find(const b_tree_t *tree,
       n = &(*n)->children[i];
     } else {
       /* match concreto ó fin de la "recursión". */
-      *s = i < (*n)->used_keys && key == (*n)->keys[i] ? (unsigned int)*n:0;
+      m->response.v = (unsigned int) (*n)->used_keys; 
+      m->response.s = i < (*n)->used_keys && key == (*n)->keys[i] ?
+                      (unsigned int) *n :
+                      0xdead;
       break;
     }
   }
