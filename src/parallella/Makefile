@@ -3,7 +3,7 @@ ELIBS=$(ESDK)/tools/host/lib
 EINCS=$(ESDK)/tools/host/include
 ELDF=$(ESDK)/bsps/current/internal.ldf
 BINS=main e_b-tree.srec
-OBJS=e_b-tree.elf b-tree.o queue.o
+OBJS=e_b-tree.elf b-tree.o
 
 CC=gcc
 ECC=e-gcc
