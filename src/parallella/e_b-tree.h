@@ -11,6 +11,9 @@
 #endif
 
 
+#define B_CHILDREN_OFFSET (B_MAX_KEYS * sizeof(b_key_t) + sizeof(int))
+
+
 typedef int b_key_t;
 typedef struct b_node_s b_node_t;
 typedef struct b_tree_s b_tree_t;
@@ -20,11 +23,11 @@ struct b_node_s {
   int           used_keys;
   b_node_t     *children[B_MAX_KEYS + 1];
   b_node_t     *parent;
-};
+} __attribute__((packed));
 
 struct b_tree_s {
   b_node_t     *root;
-};
+} __attribute__((packed));
 
 
 b_tree_t * b_new          ();

@@ -163,10 +163,9 @@ static b_node_t ** b_node_find(const b_tree_t *tree,
       n = &(*n)->children[i];
     } else {
       /* match concreto ó fin de la "recursión". */
-      m->response.v = (unsigned int) (*n)->used_keys; 
       m->response.s = i < (*n)->used_keys && key == (*n)->keys[i] ?
                       (unsigned int) *n :
-                      0xdead;
+                      (unsigned int) NULL;
       break;
     }
   }

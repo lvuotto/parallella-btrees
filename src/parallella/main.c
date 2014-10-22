@@ -7,7 +7,6 @@
 #include "nano-wait.h"
 #include "b-tree.h"
 
-
 #define DRAM_SIZE    0x02000000 /* 32MB */
 #define BTMI_ADDRESS 0x01000000
 #define B_TREE       0x01001000
@@ -17,15 +16,15 @@
 #define W_10ms         10000000
 #define W_100ms       100000000
 
-#define TEST_SIZE            17
+#define TEST_SIZE           256
 
 #define log(s)         fputs(s "\n", stderr)
 #define logf(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)
 
 
-#ifndef E_DBG_ON
+/*#ifndef E_DBG_ON
 # define E_DBG_ON 1
-#endif
+#endif*/
 
 
 void share(const b_tree_t *tree, e_mem_t *mem);
@@ -89,12 +88,6 @@ int main()
   }
   for (int i = 0; i < E_CORES; i++) b[i] = 1 + i * (TEST_SIZE / E_CORES);
   share(tree, &mem);
-  unsigned char *memoria = (unsigned char *) malloc(DRAM_SIZE - B_TREE);
-  
-  e_set_host_verbosity(H_D4);
-  e_read(&mem, 0, 0, 0x1000, memoria, DRAM_SIZE - B_TREE);
-  e_set_host_verbosity(H_D1);
-  printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA!!!\n");
 
   log("Realizando la busqueda...");
   b_status_t *response = b_find_parallel(&platform, &device, &mem, btmi, b);
@@ -148,18 +141,24 @@ b_node_t * e_share(e_mem_t *mem, off_t *pos, b_node_t *n, b_node_t *parent)
 {
   b_node_t clone = *n;
   clone.parent = parent;
-  e_write(mem, 0, 0, *pos, &clone, sizeof(clone));
+  /*e_write(mem, 0, 0, *pos, &clone, sizeof(clone));*/
   off_t old_pos = *pos;
   b_node_t *actual = (b_node_t *) (mem->ephy_base + old_pos);
   *pos += sizeof(clone);
   for (int i = 0; i <= n->used_keys && n->children[i] != NULL; i++) {
-    size_t c = (size_t) e_share(mem, pos, n->children[i], actual);
+    clone.children[i] = e_share(mem, pos, n->children[i], actual);
+    /*size_t c = (size_t) e_share(mem, pos, n->children[i], actual);
+    printf("pos = %d, epos = %d, c = %p\n",
+           old_pos,
+           old_pos + B_CHILDREN_OFFSET + i * sizeof(b_node_t *),
+           (void *) c);
     e_write(mem,
             0, 0,
             old_pos + B_CHILDREN_OFFSET + i * sizeof(b_node_t *),
-            &c, sizeof(c));
+            &c, sizeof(c));*/
   }
-  
+  e_write(mem, 0, 0, old_pos, &clone, sizeof(clone));
+
   return actual;
 }
 
@@ -193,7 +192,7 @@ b_status_t * b_find_parallel(e_platform_t *platform,
   for (unsigned int row = 0; row < platform->rows; row++) {
     for (unsigned int col = 0; col < platform->cols; col++) {
       unsigned int core = row * platform->cols + col;
-      logf("core#%u:", core);
+      logf("core#%u: ", core);
       off_t offset = (off_t) ((char *) &msg[core] - (char *) msg);
       do {
         int s = e_read(mem, 0, 0, offset, &msg[core], sizeof(msg[core]));

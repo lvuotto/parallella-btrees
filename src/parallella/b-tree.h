@@ -24,11 +24,11 @@ struct b_node_s {
   int           used_keys;
   b_node_t     *children[B_MAX_KEYS + 1];
   b_node_t     *parent;
-};
+} __attribute__((packed));
 
 struct b_tree_s {
   b_node_t     *root;
-};
+} __attribute__((packed));
 
 
 b_tree_t * b_new          ();
