@@ -6,7 +6,6 @@
 #include "btmi.h"
 #include "nano-wait.h"
 #include "b-tree.h"
-#include "queue.h"
 
 
 #define DRAM_SIZE    0x02000000 /* 32MB */

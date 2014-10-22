@@ -19,7 +19,7 @@ EOFLAGS=--srec-forceS3 --output-target srec
 
 all: $(BINS)
 
-main: main.c b-tree.o queue.o
+main: main.c b-tree.o
 	$(CC) $(CFLAGS) $(CLFLAGS) -I$(EINCS) -L$(ELIBS) -o $@ $^ -le-hal -lrt
 
 b-tree.o: b-tree.c b-tree.h btmi.h
