@@ -4,8 +4,9 @@
 #include <stddef.h>
 #include "btmi.h"
 
-#define BTMI_ADDRESS 0x8f000000
-#define B_TREE       0x8f001000
+#define BTMI_ADDRESS 0x8e000000
+#define B_TREE       0x8e001000
+#define B_MUTEX      0x00006000
 
 
 /* ======================================================================
@@ -26,6 +27,9 @@ int main()
   e_coords_from_coreid(e_get_coreid(), &row, &col);
   unsigned int core = row*e_group_config.group_cols + col;
   
+  if (row == 0 && col == 0)
+    e_mutex_init(0, 0, (e_mutex_t *) B_MUTEX, NULL);
+
   volatile b_msg_t *msg = (b_msg_t *) BTMI_ADDRESS;
   
   /* Implementar "servidor". */
@@ -47,8 +51,15 @@ int main()
         msg[core].response.v = 0;
         break;
       }
+      /*e_mutex_lock(0, 0, m);
       msg[core].status = B_STAND_BY;
-      break;
+      e_mutex_unlock(0, 0, m);*/
+      /*while (msg[core].status != B_STAND_BY)
+        msg[core].status = B_STAND_BY;
+      e_wait(E_CTIMER_1, 1000);
+      while (msg[core].status != B_STAND_BY)
+        msg[core].status = B_STAND_BY;*/
+      /*break;*/
     }
   }
 
@@ -155,20 +166,25 @@ static b_node_t ** b_node_find(const b_tree_t *tree,
                                volatile b_msg_t *m)
 {
   b_node_t **n = (b_node_t **) tree;
+  m->response.v = 0;
   while (*n != NULL) {
     int i = b_node_index(*n, key);
+    m->response.v++;
     if ((i == (*n)->used_keys || key != (*n)->keys[i]) &&
         (*n)->children[i] != NULL)
     {
       n = &(*n)->children[i];
     } else {
       /* match concreto ó fin de la "recursión". */
+      e_mutex_lock(0, 0, (e_mutex_t *) B_MUTEX);
       m->response.s = i < (*n)->used_keys && key == (*n)->keys[i] ?
                       (unsigned int) *n :
                       (unsigned int) NULL;
+      m->status = B_STAND_BY;
+      e_mutex_unlock(0, 0, (e_mutex_t *) B_MUTEX);
       break;
     }
   }
-  
+
   return n;
 }
