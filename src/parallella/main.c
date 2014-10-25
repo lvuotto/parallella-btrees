@@ -19,9 +19,6 @@
 
 #define TEST_SIZE    0x00010000
 
-#define log(s)         fputs(s "\n", stderr)
-#define logf(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)
-
 
 off_t share(const b_tree_t *tree, e_mem_t *mem);
 b_node_t * e_share(e_mem_t *mem, off_t *pos, b_node_t *n, b_node_t *parent);
@@ -42,7 +39,7 @@ int main()
   e_platform_t platform;
 
   if (e_init(NULL) != E_OK) {
-    log("Error al inicializar.");
+    printf("Error al inicializar.");
     exit(1);
   }
   e_reset_system();
@@ -52,7 +49,7 @@ int main()
   static b_msg_t btmi[16];
   memset(btmi, 0, sizeof(btmi));
   if (e_alloc(&mem, BTMI_ADDRESS, DRAM_SIZE - BTMI_ADDRESS) != E_OK) {
-    log("error al alocar (msjs)");
+    printf("error al alocar (msjs)");
     exit(1);
   }
   
@@ -66,7 +63,7 @@ int main()
                             E_FALSE);
 
   if (status != E_OK) {
-    log("Hubo problemas cargando el ejecutable.");
+    printf("Hubo problemas cargando el ejecutable.");
     exit(1);
   }
 
@@ -81,7 +78,7 @@ int main()
 
   clock_t dt;
   double tiempo;
-  log("Realizando la busqueda...");
+  printf("Realizando la busqueda...");
   dt = clock();
   for (int total = 0; total < TEST_SIZE; total += E_CORES) {
     for (int j = 0; j < E_CORES; j++)
@@ -90,7 +87,7 @@ int main()
     free(response);
   }
   dt = clock() - dt;
-  log("Busqueda completada.");
+  printf("Busqueda completada.");
   tiempo = ((double) dt) / CLOCKS_PER_SEC;
   printf("Tiempo total: %.5fs\n", tiempo);
   b_delete(tree);
@@ -183,7 +180,7 @@ b_status_t * b_find_parallel(e_platform_t *platform,
       do {
         int s = e_read(mem, 0, 0, offset, &msg[core], sizeof(msg[core]));
         if (s == E_ERR) {
-          log("error en `e_read`.");
+          printf("error en `e_read`.");
           exit(1);
         }
       } while (msg[core].status == B_JOB_TO_DO);
