@@ -1,96 +1,38 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
 #include <time.h>
 #include "b-tree.h"
 
 
-#define TOTAL_KEYS (1 << 22)
-#define TAB_SIZE 4
-
-
-void shuffle(int *a, size_t n)
-{
-  int t;
-  for (size_t i = 0, j; i < n; i++) {
-    j = i + (rand() % (n - i));
-    t = a[j];
-    a[j] = a[i];
-    a[i] = t;
-  }
-}
-
-
-void print_node(b_node_t *node, int t)
-{
-  char tab[256];
-  
-  for (int j = 0; j < t; j++) {
-    tab[j] = ' ';
-  }
-  tab[t] = 0;
-  
-  if (node != NULL) {
-    printf("%s{", tab);
-    if (node->children[0] == NULL) {
-      printf("}\n");
-    } else {
-      printf("\n");
-      print_node(node->children[0], t + TAB_SIZE);
-      printf("%s}\n", tab);
-    }
-    for (int i = 0; i < node->used_keys; i++) {
-      printf("%s'%d' [%d] [n %p] [p %p]\n%s{",
-             tab,
-             node->keys[i],
-             node->used_keys,
-             (void *) node,
-             (void *) node->parent,
-             tab);
-      if (node->children[i] == NULL) {
-        printf("}\n");
-      } else {
-        printf("\n");
-        print_node(node->children[i + 1], t + TAB_SIZE);
-        printf("%s}\n", tab);
-      }
-    }
-  } else {
-    printf("%snil\n", tab);
-  }
-}
+#define TEST_SIZE 0x00010000
 
 
 int main()
 {
+  /* COMIENZO busqueda en paralelo */
   b_tree_t *tree;
-  
-  int seed = time(NULL);
-  srand(seed);
-  printf("seed=%d\n", seed);
-  
   tree = b_new();
-  
-  int *claves = (int *) malloc(sizeof(int) * TOTAL_KEYS);
-  for (int i = 0; i < TOTAL_KEYS; i++) {
-    claves[i] = i;
+  int b[E_CORES];
+  for (int i = 0; i < TEST_SIZE; i++) {
+    b_add(tree, i+1);
   }
-  shuffle(claves, TOTAL_KEYS);
+  share(tree, &mem);
 
-  for (int i = 0; i < TOTAL_KEYS; i++) {
-    b_add(tree, claves[i]);
+  clock_t dt;
+  double tiempo;
+  log("Realizando la busqueda...");
+  dt = clock();
+  for (int total = 0; total < TEST_SIZE; total += E_CORES) {
+    for (int j = 0; j < E_CORES; j++)
+      b[j] = 1+j + total;
+    b_status_t *response = b_find_parallel(&platform, &device, &mem, btmi, b);
+    free(response);
   }
-  
-  int matches = 0;
-  for (int i = 0; i < TOTAL_KEYS; i++) {
-    if (b_find(tree, claves[i])) matches++; else break;
-  }
-  
-  printf("%s [%d]\n",
-         matches == TOTAL_KEYS ? "estan todos!" : "fallo :'(",
-         matches);
-  
+  dt = clock() - dt;
+  log("Busqueda completada.");
+  tiempo = ((double) dt) / CLOCKS_PER_SEC;
+  printf("Tiempo total: %.5fs\n", tiempo);
   b_delete(tree);
-  
+  /* FIN busqueda en paralelo */
+
   return 0;  
 }
