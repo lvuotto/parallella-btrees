@@ -8,16 +8,16 @@
 #include "nano-wait.h"
 #include "b-tree.h"
 
-#define DRAM_SIZE    0x02000000 /* 32MB */
-#define BTMI_ADDRESS 0x00000000
-#define B_TREE       0x00001000
-#define E_CORES              16
+#define DRAM_SIZE   0x02000000 /* 32MB */
+#define B_TREE      0x00000000
+#define MSG_ADDRESS 0x00004000 /* 16KB, memoria local. */
+#define E_CORES             16
 
-#define W_1ms           1000000
-#define W_10ms         10000000
-#define W_100ms       100000000
+#define W_1ms          1000000
+#define W_10ms        10000000
+#define W_100ms      100000000
 
-#define TEST_SIZE    0x00010000
+#define TEST_SIZE    (1 << 16) 
 
 
 off_t share(const b_tree_t *tree, e_mem_t *mem);
@@ -48,7 +48,7 @@ int main()
   e_mem_t mem, tree_mem;
   static b_msg_t btmi[16];
   memset(btmi, 0, sizeof(btmi));
-  if (e_alloc(&mem, BTMI_ADDRESS, DRAM_SIZE - BTMI_ADDRESS) != E_OK) {
+  if (e_alloc(&mem, B_TREE, DRAM_SIZE - B_TREE) != E_OK) {
     printf("error al alocar (msjs)");
     exit(1);
   }
@@ -168,6 +168,12 @@ b_status_t * b_find_parallel(e_platform_t *platform,
       msg[core].job = B_FIND;
       msg[core].status = B_JOB_TO_DO;
       msg[core].param = keys[core];
+      /*msg[core].response.s = 0;
+      msg[core].response.v = 0;*/
+      e_write(device,
+              row, col,
+              MSG_ADDRESS,
+              &msg[core], sizeof(msg[core]));
     }
   }
   e_write(mem, 0, 0, 0, msg, 16 * sizeof(b_msg_t));
