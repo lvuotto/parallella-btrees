@@ -4,10 +4,9 @@
 #include <stddef.h>
 #include "btmi.h"
 
-#define BTMI_ADDRESS 0x8e000000
+#define MSG_ADDRESS  0x00004000
 
-const b_tree_t *B_TREE = (b_tree_t *) 0x8e001000;
-e_mutex_t *mutex = (e_mutex_t *) 0x6000;
+const b_tree_t *B_TREE = (b_tree_t *) 0x8e000000;
 
 
 /* ======================================================================
@@ -24,35 +23,23 @@ static b_node_t ** b_node_find(const b_tree_t *tree,
 
 int main()
 {
-  unsigned int row, col;
-  e_coords_from_coreid(e_get_coreid(), &row, &col);
-  unsigned int core = row*e_group_config.group_cols + col;
-  
-  if (row == 0 && col == 0)
-    e_mutex_init(0, 0, mutex, NULL);
-
-  volatile b_msg_t *msg = (b_msg_t *) BTMI_ADDRESS;
-  b_msg_t local;
+  b_msg_t *msg = (b_msg_t *) MSG_ADDRESS;
   
   /* Implementar "servidor". */
   while (E_TRUE) {
-    local = msg[core];
-    if (local.status == B_JOB_TO_DO) {
-      switch (local.job) {
+    if (msg->status == B_JOB_TO_DO) {
+      switch (msg->job) {
       case B_INSERT:
-        local.response.s = b_node_add_nonfull((b_node_t **) B_TREE,
-                                              local.param);
-        local.response.v = 0;
+        msg->response.s = b_node_add_nonfull((b_node_t **) B_TREE,
+                                              msg->param);
+        msg->response.v = 0;
         break;
       case B_FIND:
-        b_node_find((b_tree_t *) B_TREE, local.param, &local);
-        e_mutex_lock(0, 0, mutex);
-        msg[core] = local;
-        e_mutex_unlock(0, 0, mutex);
+        b_node_find((b_tree_t *) B_TREE, msg->param, msg);
         break;
       default:
-        local.response.s = B_UNRECOGNIZED;
-        local.response.v = 0;
+        msg->response.s = B_UNRECOGNIZED;
+        msg->response.v = 0;
         break;
       }
     }
