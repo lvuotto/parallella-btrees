@@ -60,7 +60,7 @@ int main()
                             &device,
                             0, 0,
                             platform.rows, platform.cols,
-                            E_FALSE);
+                            E_TRUE);
 
   if (status != E_OK) {
     printf("Hubo problemas cargando el ejecutable.");
@@ -176,15 +176,16 @@ b_status_t * b_find_parallel(e_platform_t *platform,
               &msg[core], sizeof(msg[core]));
     }
   }
-  e_write(mem, 0, 0, 0, msg, 16 * sizeof(b_msg_t));
-  e_start_group(device);
+  /*e_start_group(device);*/
 
   for (unsigned int row = 0; row < platform->rows; row++) {
     for (unsigned int col = 0; col < platform->cols; col++) {
       unsigned int core = row * platform->cols + col;
-      off_t offset = (off_t) ((char *) &msg[core] - (char *) msg);
       do {
-        int s = e_read(mem, 0, 0, offset, &msg[core], sizeof(msg[core]));
+        ssize_t s = e_read(device,
+                           row, col,
+                           MSG_ADDRESS,
+                           &msg[core], sizeof(msg[core]));
         if (s == E_ERR) {
           printf("error en `e_read`.");
           exit(1);
