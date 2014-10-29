@@ -78,7 +78,7 @@ int main()
 
   clock_t dt;
   double tiempo;
-  printf("Realizando la busqueda...");
+  printf("Realizando la busqueda...\n");
   dt = clock();
   for (int total = 0; total < TEST_SIZE; total += E_CORES) {
     for (int j = 0; j < E_CORES; j++)
@@ -87,7 +87,7 @@ int main()
     free(response);
   }
   dt = clock() - dt;
-  printf("Busqueda completada.");
+  printf("Busqueda completada.\n");
   tiempo = ((double) dt) / CLOCKS_PER_SEC;
   printf("Tiempo total: %.5fs\n", tiempo);
   b_delete(tree);
